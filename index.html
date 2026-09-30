@@ -8,36 +8,36 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f4f4f4;
+      background: #f4f5f7;
       margin: 0;
       padding: 20px;
-      text-align: center;
     }
 
     .box {
       max-width: 500px;
       margin: 40px auto;
       background: white;
-      padding: 30px;
-      border-radius: 15px;
-      box-shadow: 0 3px 15px rgba(0,0,0,.12);
+      padding: 25px;
+      border-radius: 14px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.1);
     }
 
     h1 {
-      margin-bottom: 10px;
+      text-align: center;
+      margin-bottom: 25px;
     }
 
-    .locker {
-      font-size: 32px;
+    label {
+      display: block;
+      margin-top: 15px;
       font-weight: bold;
-      margin: 25px 0;
     }
 
     input {
       width: 100%;
       box-sizing: border-box;
-      padding: 14px;
-      margin: 8px 0;
+      padding: 13px;
+      margin-top: 7px;
       border: 1px solid #ccc;
       border-radius: 8px;
       font-size: 16px;
@@ -46,12 +46,12 @@
     button {
       width: 100%;
       padding: 14px;
-      margin-top: 15px;
+      margin-top: 20px;
       border: 0;
       border-radius: 8px;
-      background: #111;
+      background: #111827;
       color: white;
-      font-size: 17px;
+      font-size: 16px;
       cursor: pointer;
     }
 
@@ -59,8 +59,16 @@
       background: #999;
     }
 
-    #message {
+    .locker {
+      text-align: center;
+      font-size: 28px;
+      font-weight: bold;
+      margin: 20px 0;
+    }
+
+    .message {
       margin-top: 20px;
+      text-align: center;
       font-weight: bold;
     }
   </style>
@@ -69,7 +77,6 @@
 <body>
 
 <div class="box">
-
   <h1>Skabsregistrering</h1>
 
   <div id="loading">Henter skab...</div>
@@ -80,32 +87,31 @@
       Skab <span id="lockerNumber"></span>
     </div>
 
-    <div id="status"></div>
+    <div id="availableForm">
 
-    <div id="form" style="display:none;">
-
+      <label for="employeeId">Medarbejder-ID</label>
       <input
-        type="text"
         id="employeeId"
-        placeholder="Medarbejder-ID"
-      >
-
-      <input
         type="text"
-        id="employeeName"
-        placeholder="Navn"
+        placeholder="Indtast medarbejder-ID"
       >
 
-      <button id="registerButton">
+      <label for="employeeName">Navn</label>
+      <input
+        id="employeeName"
+        type="text"
+        placeholder="Indtast navn"
+      >
+
+      <button id="registerButton" onclick="registerLocker()">
         Registrér skab
       </button>
 
     </div>
 
-    <div id="message"></div>
+    <div id="message" class="message"></div>
 
   </div>
-
 </div>
 
 <script>
@@ -114,28 +120,21 @@ const SUPABASE_URL =
   "https://pwgwujojffxinfbqjlyb.supabase.co";
 
 const SUPABASE_KEY =
- sb_publishable_G7rR-9dHQLEdCLpysjNeKA_VHqhCsYz
+  "sb_publishable_G7rR-9dHQLEdCLpysjNeKA_VHqhCsYz";
 
-
-const token =
-  new URLSearchParams(window.location.search).get("token");
-
+const params = new URLSearchParams(window.location.search);
+const token = params.get("token");
 
 const loading = document.getElementById("loading");
 const content = document.getElementById("content");
 const lockerNumber = document.getElementById("lockerNumber");
-const status = document.getElementById("status");
-const form = document.getElementById("form");
+const availableForm = document.getElementById("availableForm");
 const message = document.getElementById("message");
-const registerButton =
-  document.getElementById("registerButton");
-
 
 async function loadLocker() {
 
   if (!token) {
-    loading.textContent =
-      "QR-koden mangler.";
+    loading.innerText = "QR-koden mangler.";
     return;
   }
 
@@ -143,55 +142,54 @@ async function loadLocker() {
 
     const response = await fetch(
       `${SUPABASE_URL}/rest/v1/lockers?qr_token=eq.${encodeURIComponent(token)}&select=id,locker_number,floor,status`
-    , {
-      headers: {
-        "apikey": SUPABASE_KEY,
-        "Authorization": `Bearer ${SUPABASE_KEY}`
+      , {
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${SUPABASE_KEY}`
+        }
       }
-    });
+    );
+
+    if (!response.ok) {
+      throw new Error("Kunne ikke hente skab.");
+    }
 
     const lockers = await response.json();
 
-    if (!response.ok || lockers.length === 0) {
-      loading.textContent =
-        "Skabet blev ikke fundet.";
+    if (!lockers.length) {
+      loading.innerText = "Skabet blev ikke fundet.";
       return;
     }
 
     const locker = lockers[0];
 
-    lockerNumber.textContent =
-      locker.locker_number;
+    lockerNumber.innerText = locker.locker_number;
 
     loading.style.display = "none";
     content.style.display = "block";
 
-    if (locker.status === "available") {
+    if (locker.status !== "available") {
 
-      status.textContent =
-        "Skabet er ledigt.";
+      availableForm.style.display = "none";
 
-      form.style.display = "block";
-
-    } else {
-
-      status.textContent =
+      message.innerText =
         "Dette skab er allerede optaget.";
 
     }
 
+    window.currentLocker = locker;
+
   } catch (error) {
 
-    console.error(error);
-
-    loading.textContent =
+    loading.innerText =
       "Der opstod en fejl. Prøv igen.";
 
+    console.error(error);
   }
 }
 
 
-registerButton.addEventListener("click", async () => {
+async function registerLocker() {
 
   const employeeId =
     document.getElementById("employeeId").value.trim();
@@ -199,17 +197,19 @@ registerButton.addEventListener("click", async () => {
   const employeeName =
     document.getElementById("employeeName").value.trim();
 
+  const button =
+    document.getElementById("registerButton");
+
   if (!employeeId || !employeeName) {
 
-    message.textContent =
+    message.innerText =
       "Udfyld både medarbejder-ID og navn.";
 
     return;
   }
 
-  registerButton.disabled = true;
-  registerButton.textContent =
-    "Registrerer...";
+  button.disabled = true;
+  button.innerText = "Registrerer...";
 
   try {
 
@@ -235,42 +235,40 @@ registerButton.addEventListener("click", async () => {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(JSON.stringify(result));
+      throw new Error(
+        result.message ||
+        result.error ||
+        "Registreringen fejlede."
+      );
     }
 
     if (result.success) {
 
-      form.style.display = "none";
+      availableForm.style.display = "none";
 
-      status.textContent =
-        "Skabet er nu registreret.";
-
-      message.textContent =
-        `Skab ${result.locker_number} er registreret til ${employeeName}.`;
+      message.innerText =
+        `Skab ${result.locker_number} er nu registreret til ${employeeName}.`;
 
     } else {
 
-      message.textContent =
-        result.error || "Kunne ikke registrere skabet.";
+      message.innerText =
+        result.error || "Registreringen fejlede.";
 
-      registerButton.disabled = false;
-      registerButton.textContent =
-        "Registrér skab";
+      button.disabled = false;
+      button.innerText = "Registrér skab";
     }
 
   } catch (error) {
 
     console.error(error);
 
-    message.textContent =
+    message.innerText =
       "Der opstod en fejl. Prøv igen.";
 
-    registerButton.disabled = false;
-    registerButton.textContent =
-      "Registrér skab";
+    button.disabled = false;
+    button.innerText = "Registrér skab";
   }
-
-});
+}
 
 
 loadLocker();
