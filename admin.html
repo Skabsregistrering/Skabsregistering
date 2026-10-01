@@ -3,148 +3,256 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Skabsregistrering – Admin</title>
+  <title>Skabsregistrering</title>
 
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      background: #f4f5f7;
       margin: 0;
-      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #f3f6f4;
+      color: #222;
     }
 
-    .box {
-      max-width: 900px;
-      margin: 30px auto;
-      background: white;
-      padding: 25px;
-      border-radius: 14px;
-      box-shadow: 0 2px 12px rgba(0,0,0,.1);
-    }
-
-    h1 {
+    header {
+      background: #17251d;
+      color: white;
+      padding: 22px 15px;
       text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 30px auto;
+      padding: 0 15px;
+    }
+
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      gap: 15px;
+    }
+
+    .top h2 {
+      margin: 0;
+    }
+
+    .count {
+      background: white;
+      padding: 12px 18px;
+      border-radius: 10px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+    }
+
+    .table-container {
+      background: white;
+      border-radius: 14px;
+      overflow-x: auto;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 25px;
     }
 
-    th, td {
-      padding: 12px;
-      border-bottom: 1px solid #ddd;
+    th {
+      background: #17251d;
+      color: white;
+      padding: 14px;
       text-align: left;
     }
 
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #eee;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .available {
+      color: #198754;
+      font-weight: bold;
+    }
+
+    .occupied {
+      color: #dc3545;
+      font-weight: bold;
+    }
+
     button {
-      padding: 8px 12px;
-      border: 0;
-      border-radius: 6px;
-      background: #111827;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 14px;
+      background: #dc3545;
       color: white;
+      font-weight: bold;
       cursor: pointer;
     }
 
-    .message {
+    button:hover {
+      background: #bb2d3b;
+    }
+
+    button:disabled {
+      background: #999;
+      cursor: default;
+    }
+
+    .loading,
+    .error {
       text-align: center;
-      margin-top: 20px;
+      padding: 30px;
+    }
+
+    .error {
+      color: #dc3545;
       font-weight: bold;
+    }
+
+    @media (max-width: 600px) {
+      .top {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      th,
+      td {
+        font-size: 14px;
+      }
     }
   </style>
 </head>
 
 <body>
 
-<div class="box">
-  <h1>Skabsregistrering – Admin</h1>
+<header>
+  <h1>Skabsregistrering</h1>
+</header>
 
-  <div id="message" class="message">Henter skabe...</div>
+<main>
 
-  <table id="lockerTable" style="display:none;">
-    <thead>
-      <tr>
-        <th>Skab</th>
-        <th>Etage</th>
-        <th>Status</th>
-        <th>Medarbejder</th>
-        <th>Handling</th>
-      </tr>
-    </thead>
+  <div class="top">
+    <h2>Administration</h2>
+    <div class="count" id="count">Henter...</div>
+  </div>
 
-    <tbody id="lockerBody"></tbody>
-  </table>
-</div>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Skab</th>
+          <th>Etage</th>
+          <th>Status</th>
+          <th>Medarbejder</th>
+          <th>Handling</th>
+        </tr>
+      </thead>
+
+      <tbody id="lockerList">
+        <tr>
+          <td colspan="5" class="loading">Henter skabe...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</main>
 
 <script>
-
-const SUPABASE_URL =
-  "https://pwgwujojffxinfbqjlyb.supabase.co";
-
-const SUPABASE_KEY =
-  "sb_publishable_G7rR-9dHQLEdCLpysjNeKA_VHqhCsYz";
+const SUPABASE_URL = "https://pwgwujojffxinfbqjlyb.supabase.co";
+const SUPABASE_KEY = "sb_publishable_G7rR-9dHQEdLCLpysjNeKA_VHqhCsYz";
 
 async function loadLockers() {
+  const list = document.getElementById("lockerList");
+  const count = document.getElementById("count");
 
   try {
-
     const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/lockers?select=*`,
+      `${SUPABASE_URL}/rest/v1/lockers?select=id,locker_number,floor,status,employee_id,updated_at&order=locker_number`,
       {
         headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`
         }
       }
     );
 
     if (!response.ok) {
-      throw new Error("Kunne ikke hente skabe.");
+      throw new Error("Kunne ikke hente skabe");
     }
 
     const lockers = await response.json();
 
-    const body = document.getElementById("lockerBody");
-    const table = document.getElementById("lockerTable");
-    const message = document.getElementById("message");
+    const occupied = lockers.filter(
+      locker => locker.status === "occupied"
+    ).length;
 
-    body.innerHTML = "";
+    const available = lockers.length - occupied;
+
+    count.textContent =
+      `Ledige: ${available} | Optaget: ${occupied}`;
+
+    list.innerHTML = "";
 
     lockers.forEach(locker => {
-
       const row = document.createElement("tr");
 
+      const isOccupied = locker.status === "occupied";
+
       row.innerHTML = `
-        <td>${locker.locker_number}</td>
+        <td><strong>${locker.locker_number}</strong></td>
+
         <td>${locker.floor}</td>
-        <td>${locker.status}</td>
-        <td>${locker.employee_id || "-"}</td>
+
+        <td class="${isOccupied ? "occupied" : "available"}">
+          ${isOccupied ? "Optaget" : "Ledigt"}
+        </td>
+
+        <td>
+          ${isOccupied && locker.employee_id
+            ? locker.employee_id
+            : "-"}
+        </td>
+
         <td>
           ${
-            locker.status === "occupied"
-            ? `<button onclick="releaseLocker('${locker.id}')">Frigiv</button>`
-            : "-"
+            isOccupied
+              ? `<button onclick="releaseLocker('${locker.id}')">
+                   Frigiv
+                 </button>`
+              : "-"
           }
         </td>
       `;
 
-      body.appendChild(row);
+      list.appendChild(row);
     });
 
-    message.style.display = "none";
-    table.style.display = "table";
-
   } catch (error) {
-
-    document.getElementById("message").innerText =
-      "Fejl: " + error.message;
-
+    list.innerHTML = `
+      <tr>
+        <td colspan="5" class="error">
+          Kunne ikke hente skabe.
+        </td>
+      </tr>
+    `;
   }
 }
 
 async function releaseLocker(id) {
-
   if (!confirm("Vil du frigive dette skab?")) {
     return;
   }
@@ -154,9 +262,10 @@ async function releaseLocker(id) {
     {
       method: "PATCH",
       headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
         "Content-Type": "application/json",
-        "apikey": SUPABASE_KEY,
-        "Authorization": `Bearer ${SUPABASE_KEY}`
+        "Prefer": "return=minimal"
       },
       body: JSON.stringify({
         status: "available",
@@ -176,7 +285,6 @@ async function releaseLocker(id) {
 }
 
 loadLockers();
-
 </script>
 
 </body>
