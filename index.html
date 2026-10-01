@@ -263,7 +263,7 @@ async function registerLocker() {
     console.error(error);
 
     message.innerText =
-      "Der opstod en fejl. Prøv igen.";
+     "FEJL: " + error.message;
 
     button.disabled = false;
     button.innerText = "Registrér skab";
