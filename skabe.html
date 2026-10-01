@@ -99,7 +99,17 @@ async function loadLockers() {
     }
   );
 if (!response.ok) {
-  throw new Error("Supabase fejl: " + response.status);
+  const errorText = await response.text();
+
+  document.getElementById("lockers").innerHTML =
+    "<h2>Fejl fra Supabase</h2><p>" +
+    response.status +
+    " - " +
+    errorText +
+    "</p>";
+
+  return;
+}
 }
   const lockers = await response.json();
 
