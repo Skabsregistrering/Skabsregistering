@@ -181,8 +181,8 @@ async function loadLocker() {
 
   } catch (error) {
 
-    loading.innerText =
-      "Der opstod en fejl. Prøv igen.";
+      message.innerText =
+      "FEJL: " + error.message;
 
     console.error(error);
   }
