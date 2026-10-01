@@ -98,7 +98,9 @@ async function loadLockers() {
       }
     }
   );
-
+if (!response.ok) {
+  throw new Error("Supabase fejl: " + response.status);
+}
   const lockers = await response.json();
 
   const container = document.getElementById("lockers");
