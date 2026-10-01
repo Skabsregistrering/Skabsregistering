@@ -6,273 +6,221 @@
   <title>Skabsregistrering</title>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f5f7;
-      margin: 0;
-      padding: 20px;
+    * {
+      box-sizing: border-box;
     }
 
-    .box {
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f6f4;
+      color: #222;
+    }
+
+    header {
+      background: #17251d;
+      color: white;
+      padding: 22px 15px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    main {
       max-width: 500px;
       margin: 40px auto;
+      padding: 0 20px;
+    }
+
+    .card {
       background: white;
-      padding: 25px;
-      border-radius: 14px;
-      box-shadow: 0 2px 12px rgba(0,0,0,.1);
-    }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 25px;
-    }
-
-    label {
-      display: block;
-      margin-top: 15px;
-      font-weight: bold;
-    }
-
-    input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 13px;
-      margin-top: 7px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 16px;
-    }
-
-    button {
-      width: 100%;
-      padding: 14px;
-      margin-top: 20px;
-      border: 0;
-      border-radius: 8px;
-      background: #111827;
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    button:disabled {
-      background: #999;
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
     }
 
     .locker {
       text-align: center;
       font-size: 28px;
       font-weight: bold;
-      margin: 20px 0;
+      margin-bottom: 25px;
     }
 
-    .message {
-      margin-top: 20px;
-      text-align: center;
+    label {
+      display: block;
+      margin-top: 16px;
+      margin-bottom: 7px;
       font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 17px;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 24px;
+      padding: 15px;
+      border: none;
+      border-radius: 10px;
+      background: #198754;
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #157347;
+    }
+
+    #message {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 17px;
+      font-weight: bold;
+    }
+
+    .success {
+      color: #198754;
+    }
+
+    .error {
+      color: #dc3545;
     }
   </style>
 </head>
 
 <body>
 
-<div class="box">
+<header>
   <h1>Skabsregistrering</h1>
+</header>
 
-  <div id="loading">Henter skab...</div>
+<main>
+  <div class="card">
 
-  <div id="content" style="display:none;">
-
-    <div class="locker">
-      Skab <span id="lockerNumber"></span>
+    <div class="locker" id="locker">
+      Henter skab...
     </div>
 
-    <div id="availableForm">
+    <label for="employeeId">Medarbejder-ID</label>
+    <input id="employeeId" type="text" placeholder="Indtast medarbejder-ID">
 
-      <label for="employeeId">Medarbejder-ID</label>
-      <input
-        id="employeeId"
-        type="text"
-        placeholder="Indtast medarbejder-ID"
-      >
+    <label for="name">Navn</label>
+    <input id="name" type="text" placeholder="Indtast navn">
 
-      <label for="employeeName">Navn</label>
-      <input
-        id="employeeName"
-        type="text"
-        placeholder="Indtast navn"
-      >
+    <button onclick="registerLocker()">Registrér skab</button>
 
-      <button id="registerButton" onclick="registerLocker()">
-        Registrér skab
-      </button>
-
-    </div>
-
-    <div id="message" class="message"></div>
+    <div id="message"></div>
 
   </div>
-</div>
+</main>
 
 <script>
-
-const SUPABASE_URL =
-  "https://pwgwujojffxinfbqjlyb.supabase.co";
-
-const SUPABASE_KEY =
-  "sb_publishable_G7rR-9dHQLEdCLpysjNeKA_VHqhCsYz";
+const SUPABASE_URL = "https://pwgwujojffxinfbqjlyb.supabase.co";
+const SUPABASE_KEY = "sb_publishable_G7rR-9dHQEdLCLpysjNeKA_VHqhCsYz";
 
 const params = new URLSearchParams(window.location.search);
 const token = params.get("token");
 
-const loading = document.getElementById("loading");
-const content = document.getElementById("content");
-const lockerNumber = document.getElementById("lockerNumber");
-const availableForm = document.getElementById("availableForm");
-const message = document.getElementById("message");
+let lockerNumber = null;
 
 async function loadLocker() {
-
   if (!token) {
-    loading.innerText = "QR-koden mangler.";
+    document.getElementById("locker").textContent = "Intet skab valgt";
     return;
   }
 
-  try {
-
-    const response = await fetch(
-            `${SUPABASE_URL}/rest/v1/lockers?qr_token=eq.${encodeURIComponent(token)}&select=id,locker_number,floor,status`
-      , {
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`
-        }
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/lockers?qr_token=eq.${encodeURIComponent(token)}&select=locker_number,status`,
+    {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`
       }
-    );
-
-    if (!response.ok) {
-      throw new Error("Kunne ikke hente skab.");
     }
+  );
 
-    const lockers = await response.json();
+  const data = await response.json();
 
-    if (!lockers.length) {
-      loading.innerText = "Skabet blev ikke fundet.";
-      return;
-    }
+  if (!data.length) {
+    document.getElementById("locker").textContent = "Skab ikke fundet";
+    return;
+  }
 
-    const locker = lockers[0];
+  lockerNumber = data[0].locker_number;
 
-    lockerNumber.innerText = locker.locker_number;
+  document.getElementById("locker").textContent =
+    `Skab ${lockerNumber}`;
 
-    loading.style.display = "none";
-    content.style.display = "block";
+  if (data[0].status !== "available") {
+    document.getElementById("locker").textContent =
+      `Skab ${lockerNumber} er optaget`;
 
-    if (locker.status !== "available") {
-
-      availableForm.style.display = "none";
-
-      message.innerText =
-        "Dette skab er allerede optaget.";
-
-    }
-
-    window.currentLocker = locker;
-
-  } catch (error) {
-
-      message.innerText =
-      "FEJL: " + error.message;
-
-    console.error(error);
+    document.querySelector("button").disabled = true;
+    document.querySelector("button").style.background = "#999";
   }
 }
-
 
 async function registerLocker() {
+  const employeeId = document.getElementById("employeeId").value.trim();
+  const name = document.getElementById("name").value.trim();
+  const message = document.getElementById("message");
 
-  const employeeId =
-    document.getElementById("employeeId").value.trim();
-
-  const employeeName =
-    document.getElementById("employeeName").value.trim();
-
-  const button =
-    document.getElementById("registerButton");
-
-  if (!employeeId || !employeeName) {
-
-    message.innerText =
-      "Udfyld både medarbejder-ID og navn.";
-
+  if (!employeeId || !name) {
+    message.className = "error";
+    message.textContent = "Udfyld medarbejder-ID og navn.";
     return;
   }
 
-  button.disabled = true;
-  button.innerText = "Registrerer...";
+  message.className = "";
+  message.textContent = "Registrerer...";
 
-  try {
-
-    const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/rpc/claim_locker`,
-      {
-        method: "POST",
-
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`
-        },
-
-        body: JSON.stringify({
-          p_qr_token: token,
-          p_employee_id: employeeId,
-          p_name: employeeName
-        })
-      }
-    );
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        result.message ||
-        result.error ||
-        "Registreringen fejlede."
-      );
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/rpc/claim_locker`,
+    {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        p_qr_token: token,
+        p_employee_id: employeeId,
+        p_name: name
+      })
     }
+  );
 
-    if (result.success) {
+  const result = await response.json();
 
-      availableForm.style.display = "none";
-
-      message.innerText =
-        `Skab ${result.locker_number} er nu registreret til ${employeeName}.`;
-
-    } else {
-
-      message.innerText =
-        result.error || "Registreringen fejlede.";
-
-      button.disabled = false;
-      button.innerText = "Registrér skab";
-    }
-
-  } catch (error) {
-
-    console.error(error);
-
-    message.innerText =
-     "FEJL: " + error.message;
-
-    button.disabled = false;
-    button.innerText = "Registrér skab";
+  if (!response.ok || !result.success) {
+    message.className = "error";
+    message.textContent =
+      "Skabet kunne ikke registreres. Det er muligvis allerede optaget.";
+    return;
   }
+
+  message.className = "success";
+  message.textContent =
+    `✓ Skab ${result.locker_number} er registreret til ${name}`;
+
+  document.getElementById("employeeId").disabled = true;
+  document.getElementById("name").disabled = true;
+  document.querySelector("button").disabled = true;
+  document.querySelector("button").style.background = "#999";
 }
 
-
 loadLocker();
-
 </script>
 
 </body>
