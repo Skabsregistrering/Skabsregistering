@@ -81,7 +81,7 @@
       font-weight: bold;
     }
 
-    #error {
+    .error {
       color: #dc3545;
     }
   </style>
@@ -121,7 +121,7 @@ async function loadLockers() {
   try {
 
     const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/lockers?select=id,locker_number,floor,status,qr_token&order=locker_number`,
+      `${SUPABASE_URL}/rest/v1/lockers?select=id,locker_number,floor,status,employee_id,updated_at&order=locker_number`,
       {
         headers: {
           apikey: SUPABASE_KEY,
@@ -137,13 +137,12 @@ async function loadLockers() {
     const lockers =
       await response.json();
 
+    message.textContent = "";
+
     if (!lockers.length) {
-      message.textContent =
-        "Ingen skabe fundet.";
+      message.textContent = "Ingen skabe fundet.";
       return;
     }
-
-    message.textContent = "";
 
     const floors = {};
 
@@ -191,7 +190,7 @@ async function loadLockers() {
             document.createElement("div");
 
           const available =
-            locker.status === "available";
+            locker.status !== "occupied";
 
 
           box.className =
@@ -215,15 +214,10 @@ async function loadLockers() {
 
             box.onclick = function() {
 
-              if (!locker.qr_token) {
-                alert("Skabet mangler QR-token.");
-                return;
-              }
-
               window.location.href =
-                "index.html?token=" +
+                "index.html?locker=" +
                 encodeURIComponent(
-                  locker.qr_token
+                  locker.locker_number
                 );
 
             };
@@ -245,7 +239,8 @@ async function loadLockers() {
 
     console.error(error);
 
-    message.id = "error";
+    message.className = "error";
+
     message.textContent =
       "Der kunne ikke hentes skabe.";
 
