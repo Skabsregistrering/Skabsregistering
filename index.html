@@ -22,9 +22,12 @@
     }
 
     #qrcode {
-      display: flex;
-      justify-content: center;
-      margin: 30px;
+      margin: 30px auto;
+    }
+
+    #qrcode img {
+      width: 400px;
+      height: 400px;
     }
 
     button {
@@ -51,18 +54,22 @@
 
   <button onclick="window.print()">Print QR-kode</button>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
   <script>
-    const url =
+    const skabeUrl =
       window.location.origin +
       "/Skabsregistering/skabe.html";
 
-    new QRCode(document.getElementById("qrcode"), {
-      text: url,
-      width: 400,
-      height: 400
-    });
+    const qrUrl =
+      "https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=" +
+      encodeURIComponent(skabeUrl);
+
+    const qr =
+      document.createElement("img");
+
+    qr.src = qrUrl;
+    qr.alt = "QR-kode til skabsregistrering";
+
+    document.getElementById("qrcode").appendChild(qr);
   </script>
 
 </body>
