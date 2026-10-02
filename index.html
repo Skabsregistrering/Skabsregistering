@@ -1,0 +1,70 @@
+```html
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skabsregistrering</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 40px;
+    }
+
+    h1 {
+      font-size: 32px;
+    }
+
+    p {
+      font-size: 20px;
+    }
+
+    #qrcode {
+      display: flex;
+      justify-content: center;
+      margin: 30px;
+    }
+
+    button {
+      padding: 12px 25px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    @media print {
+      button {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>SKABSREGISTRERING</h1>
+
+  <p>Scan QR-koden for at se og vælge et ledigt skab</p>
+
+  <div id="qrcode"></div>
+
+  <button onclick="window.print()">Print QR-kode</button>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <script>
+    const url =
+      window.location.origin +
+      "/Skabsregistering/skabe.html";
+
+    new QRCode(document.getElementById("qrcode"), {
+      text: url,
+      width: 400,
+      height: 400
+    });
+  </script>
+
+</body>
+</html>
+```
