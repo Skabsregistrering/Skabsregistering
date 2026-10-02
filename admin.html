@@ -263,10 +263,6 @@ async function loadAdmin() {
 
   try {
 
-    /*
-      MEDARBEJDERE
-    */
-
     const employeesResponse = await fetch(
       `${SUPABASE_URL}/rest/v1/employees?select=id,employee_id,name,email`,
       {
@@ -291,10 +287,6 @@ async function loadAdmin() {
     });
 
 
-    /*
-      HISTORIK
-    */
-
     const historyResponse = await fetch(
       `${SUPABASE_URL}/rest/v1/locker_history?select=id,locker_number,floor,employee_id,employee_name,assigned_at,released_at,released_by&order=assigned_at.desc`,
       {
@@ -312,15 +304,6 @@ async function loadAdmin() {
     const history =
       await historyResponse.json();
 
-
-    /*
-      SKABE
-
-      VIGTIGT:
-      Her sendes IKKE brugerens accessToken.
-      Det gør at Supabase bruger anon-adgangen,
-      som er den adgang der allerede virkede.
-    */
 
     const lockersResponse = await fetch(
       `${SUPABASE_URL}/rest/v1/lockers?select=id,locker_number,floor,status,employee_id,assigned_at&order=locker_number`,
@@ -531,18 +514,7 @@ async function releaseLocker(
   }
 
 
-  const headers = {
-    "apikey": SUPABASE_KEY,
-    "Authorization": `Bearer ${accessToken}`,
-    "Content-Type": "application/json"
-  };
-
-
   try {
-
-    /*
-      Opdater den aktuelle historikregistrering.
-    */
 
     const historyResponse = await fetch(
       `${SUPABASE_URL}/rest/v1/locker_history?locker_number=eq.${encodeURIComponent(lockerNumber)}&employee_id=eq.${encodeURIComponent(employeeId)}&released_at=is.null&order=assigned_at.desc&limit=1`,
@@ -550,7 +522,9 @@ async function releaseLocker(
         method: "PATCH",
 
         headers: {
-          ...headers,
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
           "Prefer": "return=minimal"
         },
 
@@ -574,17 +548,14 @@ async function releaseLocker(
     }
 
 
-    /*
-      Frigiv skabet.
-    */
-
     const lockerResponse = await fetch(
       `${SUPABASE_URL}/rest/v1/lockers?id=eq.${encodeURIComponent(lockerId)}`,
       {
         method: "PATCH",
 
         headers: {
-          ...headers,
+          "apikey": SUPABASE_KEY,
+          "Content-Type": "application/json",
           "Prefer": "return=minimal"
         },
 
