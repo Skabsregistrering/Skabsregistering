@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="da">
 <head>
@@ -48,21 +47,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script>
+const url = "https://skabsregistrering.github.io/Skabsregistering/skabe.html";
 
-const url =
-  "https://skabsregistrering.github.io/Skabsregistering/skabe.html";
-
-new QRCode(
-  document.getElementById("qrcode"),
-  {
-    text: url,
-    width: 400,
-    height: 400
-  }
-);
-
+new QRCode(document.getElementById("qrcode"), {
+  text: url,
+  width: 400,
+  height: 400
+});
 </script>
 
 </body>
 </html>
-```
