@@ -22,12 +22,9 @@
     }
 
     #qrcode {
-      margin: 30px auto;
-    }
-
-    #qrcode img {
-      width: 400px;
-      height: 400px;
+      display: flex;
+      justify-content: center;
+      margin: 30px;
     }
 
     button {
@@ -35,42 +32,36 @@
       font-size: 18px;
       cursor: pointer;
     }
-
-    @media print {
-      button {
-        display: none;
-      }
-    }
   </style>
 </head>
 
 <body>
 
-  <h1>SKABSREGISTRERING</h1>
+<h1>SKABSREGISTRERING</h1>
 
-  <p>Scan QR-koden for at se og vælge et ledigt skab</p>
+<p>Scan QR-koden for at se og vælge et ledigt skab</p>
 
-  <div id="qrcode"></div>
+<div id="qrcode"></div>
 
-  <button onclick="window.print()">Print QR-kode</button>
+<button onclick="window.print()">Print QR-kode</button>
 
-  <script>
-    const skabeUrl =
-      window.location.origin +
-      "/Skabsregistering/skabe.html";
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-    const qrUrl =
-      "https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=" +
-      encodeURIComponent(skabeUrl);
+<script>
 
-    const qr =
-      document.createElement("img");
+const url =
+  "https://skabsregistrering.github.io/Skabsregistering/skabe.html";
 
-    qr.src = qrUrl;
-    qr.alt = "QR-kode til skabsregistrering";
+new QRCode(
+  document.getElementById("qrcode"),
+  {
+    text: url,
+    width: 400,
+    height: 400
+  }
+);
 
-    document.getElementById("qrcode").appendChild(qr);
-  </script>
+</script>
 
 </body>
 </html>
