@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>Admin – Skabsregistrering</title>
+  <title>Skabsregistrering – Admin</title>
 
   <style>
     body {
@@ -16,11 +15,7 @@
 
     .box {
       max-width: 1100px;
-      margin: 0 auto;
-    }
-
-    h1 {
-      text-align: center;
+      margin: auto;
     }
 
     .login,
@@ -34,6 +29,10 @@
     .login {
       max-width: 450px;
       margin: 50px auto;
+    }
+
+    h1 {
+      text-align: center;
     }
 
     label {
@@ -77,16 +76,12 @@
       margin-top: 30px;
     }
 
-    .floor h2 {
-      margin-bottom: 10px;
-    }
-
     .locker {
       background: white;
+      border-left: 8px solid #22c55e;
       border-radius: 8px;
       padding: 15px;
       margin-bottom: 10px;
-      border-left: 8px solid #22c55e;
       box-shadow: 0 1px 5px rgba(0,0,0,0.1);
     }
 
@@ -125,21 +120,12 @@
     <h1>Admin login</h1>
 
     <label for="email">E-mail</label>
-    <input
-      type="email"
-      id="email"
-      placeholder="admin@norlys.dk"
-    >
+    <input type="email" id="email">
 
     <label for="password">Password</label>
-    <input
-      type="password"
-      id="password"
-    >
+    <input type="password" id="password">
 
-    <button onclick="login()">
-      Log ind
-    </button>
+    <button onclick="login()">Log ind</button>
 
     <div id="loginStatus"></div>
 
@@ -148,9 +134,7 @@
 
   <div id="adminBox" class="admin" style="display:none;">
 
-    <button class="logout" onclick="logout()">
-      Log ud
-    </button>
+    <button class="logout" onclick="logout()">Log ud</button>
 
     <h1>Skabsregistrering – Admin</h1>
 
@@ -175,7 +159,6 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
   "sb_publishable_XU7y4WVGX4Osj7ixgRIfDA_mHpJ1ttv";
 
-
 let accessToken = null;
 
 
@@ -190,14 +173,6 @@ async function login() {
   const status =
     document.getElementById("loginStatus");
 
-  if (!email || !password) {
-
-    status.innerHTML =
-      "<div class='error'>Indtast e-mail og password.</div>";
-
-    return;
-  }
-
   status.textContent = "Logger ind...";
 
   try {
@@ -206,12 +181,10 @@ async function login() {
       `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
       {
         method: "POST",
-
         headers: {
           "Content-Type": "application/json",
           "apikey": SUPABASE_KEY
         },
-
         body: JSON.stringify({
           email: email,
           password: password
@@ -222,7 +195,6 @@ async function login() {
     const data = await response.json();
 
     if (!response.ok) {
-
       throw new Error(
         data.error_description ||
         data.msg ||
@@ -232,11 +204,8 @@ async function login() {
 
     accessToken = data.access_token;
 
-    document.getElementById("loginBox").style.display =
-      "none";
-
-    document.getElementById("adminBox").style.display =
-      "block";
+    document.getElementById("loginBox").style.display = "none";
+    document.getElementById("adminBox").style.display = "block";
 
     loadLockers();
 
@@ -259,7 +228,7 @@ async function loadLockers() {
   try {
 
     const response = await fetch(
-      `${SUPABASE_URL}?select=locker_number,floor,status,employee_id,assigned_at
+      `${SUPABASE_URL}/rest/v1/lockers?select=locker_number,floor,status,employee_id,assigned_at`,
       {
         headers: {
           "apikey": SUPABASE_KEY,
@@ -319,7 +288,8 @@ async function loadLockers() {
 
       floorDiv.appendChild(title);
 
-      floorLockers.forEach(locker => {
+
+      for (const locker of floorLockers) {
 
         const div =
           document.createElement("div");
@@ -330,17 +300,52 @@ async function loadLockers() {
             ? "occupied"
             : "");
 
+
         let html =
           `<strong>Skab ${locker.locker_number}</strong><br>`;
 
         html +=
           `Status: ${locker.status}<br>`;
 
+
         if (locker.employee_id) {
 
-          html +=
-            `E-mail: ${locker.employee_id}<br>`;
+          try {
+
+            const employeeResponse = await fetch(
+              `${SUPABASE_URL}/rest/v1/employees?id=eq.${encodeURIComponent(locker.employee_id)}&select=name,email`,
+              {
+                headers: {
+                  "apikey": SUPABASE_KEY,
+                  "Authorization": `Bearer ${SUPABASE_KEY}`
+                }
+              }
+            );
+
+            if (employeeResponse.ok) {
+
+              const employees =
+                await employeeResponse.json();
+
+              if (employees.length > 0) {
+
+                const employee = employees[0];
+
+                html +=
+                  `E-mail: ${employee.email || "Ikke registreret"}<br>`;
+
+                html +=
+                  `Navn: ${employee.name || "Ikke registreret"}<br>`;
+              }
+            }
+
+          } catch (error) {
+
+            html +=
+              `E-mail: Kunne ikke hentes<br>`;
+          }
         }
+
 
         if (locker.assigned_at) {
 
@@ -350,19 +355,21 @@ async function loadLockers() {
             ).toLocaleString("da-DK")}<br>`;
         }
 
+
         if (locker.status === "occupied") {
 
           html +=
             `<button class="release"
-              onclick="releaseLocker('${locker.id}', '${locker.locker_number}')">
+              onclick="releaseLocker('${locker.locker_number}')">
               Frigiv skab
             </button>`;
         }
 
+
         div.innerHTML = html;
 
         floorDiv.appendChild(div);
-      });
+      }
 
       container.appendChild(floorDiv);
     }
@@ -378,7 +385,7 @@ async function loadLockers() {
 }
 
 
-async function releaseLocker(id, lockerNumber) {
+async function releaseLocker(lockerNumber) {
 
   if (!confirm(
     `Vil du frigive skab ${lockerNumber}?`
@@ -392,14 +399,14 @@ async function releaseLocker(id, lockerNumber) {
   try {
 
     const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/lockers?id=eq.${encodeURIComponent(id)}`,
+      `${SUPABASE_URL}/rest/v1/lockers?locker_number=eq.${encodeURIComponent(lockerNumber)}`,
       {
         method: "PATCH",
 
         headers: {
           "Content-Type": "application/json",
           "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${accessToken}`,
+          "Authorization": `Bearer ${SUPABASE_KEY}`,
           "Prefer": "return=minimal"
         },
 
@@ -440,14 +447,10 @@ function logout() {
 
   accessToken = null;
 
-  document.getElementById("adminBox").style.display =
-    "none";
-
-  document.getElementById("loginBox").style.display =
-    "block";
+  document.getElementById("adminBox").style.display = "none";
+  document.getElementById("loginBox").style.display = "block";
 
   document.getElementById("password").value = "";
-
 }
 
 </script>
