@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vælg skab</title>
+  <title>Vælg et skab</title>
 </head>
 
 <body>
@@ -11,59 +11,43 @@
 <h1>Vælg et skab</h1>
 
 <div id="message">Henter skabe...</div>
-<div id="lockerContainer"></div>
 
 <script>
 const SUPABASE_URL = "https://pwgwujojffxinfbqjlyb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_G7rR-9dHQEdLCLpysjNeKA_VHqhCsYz";
 
-async function loadLockers() {
+async function test() {
   const message = document.getElementById("message");
 
   try {
     const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/lockers?select=locker_number,floor,status&order=locker_number`,
+      SUPABASE_URL + "/rest/v1/lockers?select=locker_number,floor,status",
       {
+        method: "GET",
         headers: {
           "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`
+          "Authorization": "Bearer " + SUPABASE_KEY
         }
       }
     );
 
-    const text = await response.text();
+    const result = await response.text();
 
-    if (!response.ok) {
-      message.innerHTML =
-        "<strong>Supabase-fejl:</strong><br>" +
-        response.status + "<br><br>" +
-        text;
-      return;
-    }
-
-    const lockers = JSON.parse(text);
-
-    message.textContent = "Antal skabe: " + lockers.length;
-
-    const container = document.getElementById("lockerContainer");
-
-    lockers.forEach(locker => {
-      const div = document.createElement("div");
-      div.textContent =
-        "Skab " + locker.locker_number +
-        " – etage " + locker.floor +
-        " – " + locker.status;
-
-      container.appendChild(div);
-    });
+    message.innerHTML =
+      "<pre>" +
+      "HTTP: " + response.status + "\n\n" +
+      result +
+      "</pre>";
 
   } catch (error) {
     message.innerHTML =
-      "<strong>Fejl:</strong><br>" + error.message;
+      "<pre>JAVASCRIPT FEJL:\n\n" +
+      error.message +
+      "</pre>";
   }
 }
 
-loadLockers();
+test();
 </script>
 
 </body>
