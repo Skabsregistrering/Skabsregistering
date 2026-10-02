@@ -96,19 +96,20 @@
 
     .history {
       margin-top: 15px;
-      padding: 12px;
+      padding: 15px;
       background: #f3f4f6;
-      border-radius: 6px;
+      border-radius: 8px;
     }
 
     .history-title {
       font-weight: bold;
-      margin-bottom: 8px;
+      font-size: 18px;
+      margin-bottom: 10px;
     }
 
     .history-item {
-      padding: 8px 0;
-      border-bottom: 1px solid #ddd;
+      padding: 10px 0;
+      border-bottom: 1px solid #d1d5db;
     }
 
     .history-item:last-child {
@@ -217,12 +218,10 @@ async function login() {
       "/auth/v1/token?grant_type=password",
       {
         method: "POST",
-
         headers: {
           "Content-Type": "application/json",
           "apikey": SUPABASE_KEY
         },
-
         body: JSON.stringify({
           email: email,
           password: password
@@ -258,7 +257,7 @@ async function login() {
 }
 
 
-/* HENT SKABE + MEDARBEJDERE + HISTORIK */
+/* HENT ALT */
 
 async function loadLockers() {
 
@@ -287,10 +286,7 @@ async function loadLockers() {
     );
 
     if (!lockersResponse.ok) {
-
-      throw new Error(
-        "Kunne ikke hente skabe."
-      );
+      throw new Error("Kunne ikke hente skabe.");
     }
 
     const lockers =
@@ -310,19 +306,19 @@ async function loadLockers() {
       }
     );
 
-    let employees = [];
-
-    if (employeesResponse.ok) {
-      employees =
-        await employeesResponse.json();
+    if (!employeesResponse.ok) {
+      throw new Error("Kunne ikke hente medarbejdere.");
     }
+
+    const employees =
+      await employeesResponse.json();
 
 
     /* HISTORIK */
 
     const historyResponse = await fetch(
       SUPABASE_URL +
-      "/rest/v1/locker_history?select=locker_number,employee_name,assigned_at,released_at&order=assigned_at.desc",
+      "/rest/v1/locker_history?select=id,locker_number,floor,employee_id,employee_name,assigned_at,released_at,created_at&order=assigned_at.desc",
       {
         headers: {
           "apikey": SUPABASE_KEY,
@@ -331,26 +327,25 @@ async function loadLockers() {
       }
     );
 
-    let history = [];
-
-    if (historyResponse.ok) {
-      history =
-        await historyResponse.json();
+    if (!historyResponse.ok) {
+      throw new Error("Kunne ikke hente historik.");
     }
 
+    const history =
+      await historyResponse.json();
 
-    /* OPBYG MEDARBEJDER-MAP */
+
+    /* MEDARBEJDER-MAP */
 
     const employeeMap = {};
 
     employees.forEach(function(employee) {
-
       employeeMap[employee.id] = employee;
-
     });
 
 
     container.innerHTML = "";
+
 
     const floors = {
       0: "Stuen",
@@ -360,15 +355,13 @@ async function loadLockers() {
     };
 
 
-    /* GÅ IGENNEM ETAGER */
+    /* ETAGER */
 
     for (let floor = 0; floor <= 3; floor++) {
 
       const floorLockers =
         lockers.filter(function(locker) {
-
           return Number(locker.floor) === floor;
-
         });
 
 
@@ -392,6 +385,8 @@ async function loadLockers() {
       floorDiv.appendChild(title);
 
 
+      /* SKABE */
+
       floorLockers.forEach(function(locker) {
 
         const div =
@@ -401,9 +396,7 @@ async function loadLockers() {
 
 
         if (locker.status === "occupied") {
-
           div.classList.add("occupied");
-
         }
 
 
@@ -419,7 +412,7 @@ async function loadLockers() {
           "<br>";
 
 
-        /* AKTIV BRUGER */
+        /* AKTUEL BRUGER */
 
         if (
           locker.status === "occupied" &&
@@ -434,16 +427,15 @@ async function loadLockers() {
 
             html +=
               "<strong>Navn:</strong> " +
-              employee.name +
+              escapeHtml(employee.name) +
               "<br>";
 
             html +=
               "<strong>E-mail:</strong> " +
-              employee.email +
+              escapeHtml(employee.email) +
               "<br>";
 
           }
-
         }
 
 
@@ -474,7 +466,7 @@ async function loadLockers() {
         }
 
 
-        /* HISTORIK */
+        /* HISTORIK FOR DETTE SKAB */
 
         const lockerHistory =
           history.filter(function(item) {
@@ -489,26 +481,41 @@ async function loadLockers() {
 
           html +=
             '<div class="history">' +
-            '<div class="history-title">' +
-            'Historik' +
-            '</div>';
+            '<div class="history-title">Historik</div>';
 
 
           lockerHistory.forEach(function(item) {
 
+            const employee =
+              employeeMap[item.employee_id];
+
+
             html +=
               '<div class="history-item">';
 
+
             html +=
-              "<strong>" +
-              (item.employee_name || "Ukendt") +
-              "</strong><br>";
+              "<strong>Navn:</strong> " +
+              escapeHtml(
+                item.employee_name || "Ukendt"
+              ) +
+              "<br>";
+
+
+            if (employee && employee.email) {
+
+              html +=
+                "<strong>E-mail:</strong> " +
+                escapeHtml(employee.email) +
+                "<br>";
+
+            }
 
 
             if (item.assigned_at) {
 
               html +=
-                "Fra: " +
+                "<strong>Registreret:</strong> " +
                 new Date(
                   item.assigned_at
                 ).toLocaleString("da-DK") +
@@ -520,7 +527,7 @@ async function loadLockers() {
             if (item.released_at) {
 
               html +=
-                "Frigivet: " +
+                "<strong>Frigivet:</strong> " +
                 new Date(
                   item.released_at
                 ).toLocaleString("da-DK");
@@ -528,7 +535,8 @@ async function loadLockers() {
             } else {
 
               html +=
-                "Nuværende registrering";
+                "<strong>Status:</strong> " +
+                "Registrering";
 
             }
 
@@ -573,6 +581,23 @@ async function loadLockers() {
       "</div>";
 
   }
+}
+
+
+/* SIKKER VISNING AF TEKST */
+
+function escapeHtml(text) {
+
+  if (text === null || text === undefined) {
+    return "";
+  }
+
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 
@@ -629,7 +654,6 @@ async function releaseLocker(lockerNumber) {
         ": " +
         text
       );
-
     }
 
 
