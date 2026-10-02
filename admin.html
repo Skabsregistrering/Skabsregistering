@@ -96,15 +96,25 @@
 
     .history {
       margin-top: 15px;
-      padding: 15px;
-      background: #f3f4f6;
-      border-radius: 8px;
     }
 
-    .history-title {
+    .history summary {
+      cursor: pointer;
       font-weight: bold;
-      font-size: 18px;
-      margin-bottom: 10px;
+      padding: 12px;
+      background: #f3f4f6;
+      border-radius: 8px;
+      user-select: none;
+    }
+
+    .history summary:hover {
+      background: #e5e7eb;
+    }
+
+    .history-content {
+      background: #f3f4f6;
+      padding: 5px 15px 10px 15px;
+      border-radius: 0 0 8px 8px;
     }
 
     .history-item {
@@ -272,8 +282,6 @@ async function loadLockers() {
 
   try {
 
-    /* SKABE */
-
     const lockersResponse = await fetch(
       SUPABASE_URL +
       "/rest/v1/lockers?select=locker_number,floor,status,employee_id,assigned_at&order=locker_number",
@@ -292,8 +300,6 @@ async function loadLockers() {
     const lockers =
       await lockersResponse.json();
 
-
-    /* MEDARBEJDERE */
 
     const employeesResponse = await fetch(
       SUPABASE_URL +
@@ -314,8 +320,6 @@ async function loadLockers() {
       await employeesResponse.json();
 
 
-    /* HISTORIK */
-
     const historyResponse = await fetch(
       SUPABASE_URL +
       "/rest/v1/locker_history?select=id,locker_number,floor,employee_id,employee_name,assigned_at,released_at,created_at&order=assigned_at.desc",
@@ -335,8 +339,6 @@ async function loadLockers() {
       await historyResponse.json();
 
 
-    /* MEDARBEJDER-MAP */
-
     const employeeMap = {};
 
     employees.forEach(function(employee) {
@@ -354,8 +356,6 @@ async function loadLockers() {
       3: "Etage 3"
     };
 
-
-    /* ETAGER */
 
     for (let floor = 0; floor <= 3; floor++) {
 
@@ -384,8 +384,6 @@ async function loadLockers() {
 
       floorDiv.appendChild(title);
 
-
-      /* SKABE */
 
       floorLockers.forEach(function(locker) {
 
@@ -466,7 +464,7 @@ async function loadLockers() {
         }
 
 
-        /* HISTORIK FOR DETTE SKAB */
+        /* SAMMENKLAPPELIG HISTORIK */
 
         const lockerHistory =
           history.filter(function(item) {
@@ -480,8 +478,15 @@ async function loadLockers() {
         if (lockerHistory.length > 0) {
 
           html +=
-            '<div class="history">' +
-            '<div class="history-title">Historik</div>';
+            '<details class="history">';
+
+          html +=
+            '<summary>▶ Vis historik (' +
+            lockerHistory.length +
+            ')</summary>';
+
+          html +=
+            '<div class="history-content">';
 
 
           lockerHistory.forEach(function(item) {
@@ -550,6 +555,9 @@ async function loadLockers() {
           html +=
             "</div>";
 
+          html +=
+            "</details>";
+
         }
 
 
@@ -584,7 +592,7 @@ async function loadLockers() {
 }
 
 
-/* SIKKER VISNING AF TEKST */
+/* SIKKER TEKST */
 
 function escapeHtml(text) {
 
