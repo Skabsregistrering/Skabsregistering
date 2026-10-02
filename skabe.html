@@ -119,7 +119,8 @@ async function loadLockers() {
   try {
 
     const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/lockers?select=id,locker_number,floor,status,employee_id,updated_at&order=locker_number`,
+  SUPABASE_URL +
+  "/rest/v1/lockers?select=id,locker_number,floor,status,employee_id,updated_at&order=locker_number",
       {
         headers: {
           apikey: SUPABASE_KEY,
