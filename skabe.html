@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="da">
 <head>
@@ -12,15 +13,15 @@
 
     body {
       margin: 0;
+      padding: 20px;
       font-family: Arial, sans-serif;
       background: #f3f6f4;
       color: #222;
-      padding: 20px;
     }
 
     h1 {
       text-align: center;
-      margin: 10px 0;
+      margin-bottom: 8px;
     }
 
     .info {
@@ -34,7 +35,6 @@
       padding: 18px;
       margin-bottom: 20px;
       border-radius: 14px;
-      box-shadow: 0 3px 12px rgba(0,0,0,0.06);
     }
 
     .floor h2 {
@@ -48,7 +48,7 @@
     }
 
     .locker {
-      padding: 15px 5px;
+      padding: 14px 5px;
       border-radius: 9px;
       text-align: center;
       font-weight: bold;
@@ -58,10 +58,6 @@
       background: #d1fae5;
       color: #065f46;
       cursor: pointer;
-    }
-
-    .available:hover {
-      background: #a7f3d0;
     }
 
     .occupied {
@@ -80,19 +76,15 @@
       padding: 20px;
       font-weight: bold;
     }
-
-    .error {
-      color: #dc3545;
-    }
   </style>
 </head>
 
 <body>
 
-<h1>Skabsregistrering</h1>
+<h1>Vælg et skab</h1>
 
 <div class="info">
-  Vælg et ledigt skab
+  Grøn = ledigt &nbsp; | &nbsp; Rød = optaget
 </div>
 
 <div id="message">
@@ -137,12 +129,12 @@ async function loadLockers() {
     const lockers =
       await response.json();
 
-    message.textContent = "";
-
     if (!lockers.length) {
       message.textContent = "Ingen skabe fundet.";
       return;
     }
+
+    message.textContent = "";
 
     const floors = {};
 
@@ -167,15 +159,15 @@ async function loadLockers() {
         floorDiv.className = "floor";
 
 
-        const title =
+        const heading =
           document.createElement("h2");
 
-        title.textContent =
+        heading.textContent =
           Number(floor) === 0
             ? "Stuen"
             : "Etage " + floor;
 
-        floorDiv.appendChild(title);
+        floorDiv.appendChild(heading);
 
 
         const grid =
@@ -192,13 +184,11 @@ async function loadLockers() {
           const available =
             locker.status !== "occupied";
 
-
           box.className =
             "locker " +
             (available
               ? "available"
               : "occupied");
-
 
           box.innerHTML =
             "SKAB " +
@@ -209,28 +199,13 @@ async function loadLockers() {
               : "Optaget") +
             "</div>";
 
-
-          if (available) {
-
-            box.onclick = function() {
-
-              window.location.href =
-                "index.html?locker=" +
-                encodeURIComponent(
-                  locker.locker_number
-                );
-
-            };
-
-          }
-
-
           grid.appendChild(box);
 
         });
 
 
         floorDiv.appendChild(grid);
+
         container.appendChild(floorDiv);
 
       });
@@ -238,8 +213,6 @@ async function loadLockers() {
   } catch (error) {
 
     console.error(error);
-
-    message.className = "error";
 
     message.textContent =
       "Der kunne ikke hentes skabe.";
@@ -255,3 +228,4 @@ loadLockers();
 
 </body>
 </html>
+```
