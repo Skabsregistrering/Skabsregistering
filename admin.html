@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="da">
 <head>
   <meta charset="UTF-8">
@@ -109,7 +108,6 @@
       clear: both;
     }
   </style>
-
 </head>
 
 <body>
@@ -118,69 +116,90 @@
 
   <div id="loginBox" class="login">
 
-```
-<h1>Admin login</h1>
+    <h1>Admin login</h1>
 
-<label for="email">E-mail</label>
-<input type="email" id="email">
+    <label for="email">E-mail</label>
+    <input type="email" id="email">
 
-<label for="password">Password</label>
-<input type="password" id="password">
+    <label for="password">Password</label>
+    <input type="password" id="password">
 
-<button onclick="login()">Log ind</button>
+    <button id="loginButton">Log ind</button>
 
-<div id="loginStatus"></div>
-```
+    <div id="loginStatus"></div>
 
   </div>
+
 
   <div id="adminBox" class="admin" style="display:none;">
 
-```
-<button class="logout" onclick="logout()">Log ud</button>
+    <button class="logout" id="logoutButton">Log ud</button>
 
-<h1>Skabsregistrering – Admin</h1>
+    <h1>Skabsregistrering – Admin</h1>
 
-<div class="clear"></div>
+    <div class="clear"></div>
 
-<div id="status"></div>
+    <div id="status"></div>
 
-<div id="lockers">
-  Indlæser skabe...
-</div>
-```
+    <div id="lockers">
+      Indlæser skabe...
+    </div>
 
   </div>
 
 </div>
 
+
 <script>
 
-const SUPABASE_URL = "https://pwgwujojffxinfbqjlyb.supabase.co";
+const SUPABASE_URL =
+  "https://pwgwujojffxinfbqjlyb.supabase.co";
 
-const SUPABASE_KEY = "sb_publishable_XU7y4WVGX4Osj7ixgRIfDA_mHpJ1ttv";
+const SUPABASE_KEY =
+  "sb_publishable_XU7y4WVGX4Osj7ixgRIfDA_mHpJ1ttv";
 
 let accessToken = null;
 
 
+/* LOGIN */
+
+document.getElementById("loginButton").addEventListener("click", login);
+
+
 async function login() {
 
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value;
-  const loginStatus = document.getElementById("loginStatus");
+  const email =
+    document.getElementById("email").value.trim();
+
+  const password =
+    document.getElementById("password").value;
+
+  const loginStatus =
+    document.getElementById("loginStatus");
+
+  if (!email || !password) {
+
+    loginStatus.innerHTML =
+      '<div class="error">Indtast e-mail og password.</div>';
+
+    return;
+  }
 
   loginStatus.textContent = "Logger ind...";
 
   try {
 
     const response = await fetch(
-      SUPABASE_URL + "/auth/v1/token?grant_type=password",
+      SUPABASE_URL +
+      "/auth/v1/token?grant_type=password",
       {
         method: "POST",
+
         headers: {
           "Content-Type": "application/json",
           "apikey": SUPABASE_KEY
         },
+
         body: JSON.stringify({
           email: email,
           password: password
@@ -191,9 +210,11 @@ async function login() {
     const data = await response.json();
 
     if (!response.ok) {
+
       throw new Error(
         data.error_description ||
         data.msg ||
+        data.message ||
         "Login mislykkedes."
       );
     }
@@ -201,6 +222,7 @@ async function login() {
     accessToken = data.access_token;
 
     document.getElementById("loginBox").style.display = "none";
+
     document.getElementById("adminBox").style.display = "block";
 
     loadLockers();
@@ -211,17 +233,22 @@ async function login() {
       '<div class="error">' +
       error.message +
       '</div>';
-
   }
 }
 
 
+/* HENT SKABE */
+
 async function loadLockers() {
 
-  const container = document.getElementById("lockers");
-  const status = document.getElementById("status");
+  const container =
+    document.getElementById("lockers");
+
+  const status =
+    document.getElementById("status");
 
   container.innerHTML = "Indlæser skabe...";
+
   status.innerHTML = "";
 
   try {
@@ -230,7 +257,6 @@ async function loadLockers() {
       SUPABASE_URL +
       "/rest/v1/lockers?select=locker_number,floor,status,employee_id,assigned_at&order=locker_number",
       {
-        method: "GET",
         headers: {
           "apikey": SUPABASE_KEY,
           "Authorization": "Bearer " + SUPABASE_KEY
@@ -241,16 +267,16 @@ async function loadLockers() {
     const text = await response.text();
 
     if (!response.ok) {
+
       throw new Error(
-        "Fejl " + response.status + ": " + text
+        "Fejl " +
+        response.status +
+        ": " +
+        text
       );
     }
 
     const lockers = JSON.parse(text);
-
-    if (!Array.isArray(lockers)) {
-      throw new Error("Ugyldigt svar fra Supabase.");
-    }
 
     container.innerHTML = "";
 
@@ -263,25 +289,32 @@ async function loadLockers() {
 
     for (let floor = 0; floor <= 3; floor++) {
 
-      const floorLockers = lockers.filter(function(locker) {
-        return Number(locker.floor) === floor;
-      });
+      const floorLockers =
+        lockers.filter(function(locker) {
+          return Number(locker.floor) === floor;
+        });
 
       if (floorLockers.length === 0) {
         continue;
       }
 
-      const floorDiv = document.createElement("div");
+      const floorDiv =
+        document.createElement("div");
+
       floorDiv.className = "floor";
 
-      const title = document.createElement("h2");
+      const title =
+        document.createElement("h2");
+
       title.textContent = floors[floor];
 
       floorDiv.appendChild(title);
 
+
       floorLockers.forEach(function(locker) {
 
-        const div = document.createElement("div");
+        const div =
+          document.createElement("div");
 
         div.className = "locker";
 
@@ -307,7 +340,6 @@ async function loadLockers() {
               locker.assigned_at
             ).toLocaleString("da-DK") +
             "<br>";
-
         }
 
         if (locker.status === "occupied") {
@@ -319,7 +351,6 @@ async function loadLockers() {
             '\')">' +
             'Frigiv skab' +
             '</button>';
-
         }
 
         div.innerHTML = html;
@@ -344,10 +375,11 @@ async function loadLockers() {
       '<div class="error">' +
       error.message +
       '</div>';
-
   }
 }
 
+
+/* FRIGIV SKAB */
 
 async function releaseLocker(lockerNumber) {
 
@@ -370,12 +402,14 @@ async function releaseLocker(lockerNumber) {
       encodeURIComponent(lockerNumber),
       {
         method: "PATCH",
+
         headers: {
           "Content-Type": "application/json",
           "apikey": SUPABASE_KEY,
           "Authorization": "Bearer " + SUPABASE_KEY,
           "Prefer": "return=minimal"
         },
+
         body: JSON.stringify({
           status: "available",
           employee_id: null,
@@ -399,10 +433,10 @@ async function releaseLocker(lockerNumber) {
 
     status.innerHTML =
       '<div class="success">' +
-      'Skab ' +
+      "Skab " +
       lockerNumber +
-      ' er frigivet.' +
-      '</div>';
+      " er frigivet." +
+      "</div>";
 
     loadLockers();
 
@@ -411,10 +445,16 @@ async function releaseLocker(lockerNumber) {
     status.innerHTML =
       '<div class="error">' +
       error.message +
-      '</div>';
-
+      "</div>";
   }
 }
+
+
+/* LOG UD */
+
+document
+  .getElementById("logoutButton")
+  .addEventListener("click", logout);
 
 
 function logout() {
@@ -427,6 +467,7 @@ function logout() {
 
   document.getElementById("password").value = "";
 
+  document.getElementById("loginStatus").textContent = "";
 }
 
 </script>
