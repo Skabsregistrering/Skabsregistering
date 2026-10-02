@@ -317,7 +317,7 @@ async function loadLockers() {
               {
                 headers: {
                   "apikey": SUPABASE_KEY,
-                  "Authorization": `Bearer ${SUPABASE_KEY}`
+                  "Authorization": `Bearer ${accessToken}`
                 }
               }
             );
