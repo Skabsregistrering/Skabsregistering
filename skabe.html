@@ -1,91 +1,63 @@
-```html
 <!DOCTYPE html>
 <html lang="da">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vælg skab</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vælg skab</title>
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+<style>
+body {
+  margin: 0;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  background: #f3f6f4;
+}
 
-    body {
-      margin: 0;
-      padding: 20px;
-      font-family: Arial, sans-serif;
-      background: #f3f6f4;
-      color: #222;
-    }
+h1 {
+  text-align: center;
+}
 
-    h1 {
-      text-align: center;
-      margin-bottom: 8px;
-    }
+.info {
+  text-align: center;
+  margin-bottom: 20px;
+}
 
-    .info {
-      text-align: center;
-      color: #555;
-      margin-bottom: 25px;
-    }
+#message {
+  text-align: center;
+  padding: 20px;
+  font-weight: bold;
+}
 
-    .floor {
-      background: white;
-      padding: 18px;
-      margin-bottom: 20px;
-      border-radius: 14px;
-      box-shadow: 0 3px 12px rgba(0,0,0,0.06);
-    }
+.floor {
+  background: white;
+  padding: 18px;
+  margin-bottom: 20px;
+  border-radius: 14px;
+}
 
-    .floor h2 {
-      margin-top: 0;
-    }
+.lockers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+  gap: 10px;
+}
 
-    .lockers {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
-      gap: 10px;
-    }
+.locker {
+  padding: 15px 5px;
+  border-radius: 9px;
+  text-align: center;
+  font-weight: bold;
+}
 
-    .locker {
-      padding: 14px 5px;
-      border-radius: 9px;
-      text-align: center;
-      font-weight: bold;
-    }
+.available {
+  background: #d1fae5;
+  color: #065f46;
+}
 
-    .available {
-      background: #d1fae5;
-      color: #065f46;
-      cursor: pointer;
-    }
-
-    .available:hover {
-      background: #a7f3d0;
-    }
-
-    .occupied {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-
-    .status {
-      margin-top: 5px;
-      font-size: 12px;
-      font-weight: normal;
-    }
-
-    #message {
-      text-align: center;
-      padding: 20px;
-      font-weight: bold;
-    }
-
-    .error {
-      color: #dc3545;
-    }
-  </style>
+.occupied {
+  background: #fee2e2;
+  color: #991b1b;
+}
+</style>
 </head>
 
 <body>
@@ -93,11 +65,11 @@
 <h1>Skabsregistrering</h1>
 
 <div class="info">
-  Vælg et ledigt skab
+Vælg et ledigt skab
 </div>
 
 <div id="message">
-  Henter skabe...
+Henter skabe...
 </div>
 
 <div id="lockers"></div>
@@ -105,19 +77,15 @@
 <script>
 
 const SUPABASE_URL =
-  "https://pwgwujojffxinfbqjlyb.supabase.co";
+"https://pwgwujojffxinfbqjlyb.supabase.co";
 
 const SUPABASE_KEY =
-  "sb_publishable_G7rR-9dHQEdLCLpysjNeKA_VHqhCsYz";
-
+"sb_publishable_G7rR-9dHQEdLCLpysjNeKA_VHqhCsYz";
 
 async function loadLockers() {
 
-  const message =
-    document.getElementById("message");
-
-  const container =
-    document.getElementById("lockers");
+  const message = document.getElementById("message");
+  const container = document.getElementById("lockers");
 
   try {
 
@@ -132,17 +100,15 @@ async function loadLockers() {
     );
 
     if (!response.ok) {
-      throw new Error(
-        "Supabase fejl: " + response.status
-      );
+      throw new Error(await response.text());
     }
 
-    const lockers =
-      await response.json();
+    const lockers = await response.json();
 
-    if (!lockers.length) {
-      message.textContent =
-        "Ingen skabe fundet.";
+    console.log(lockers);
+
+    if (lockers.length === 0) {
+      message.textContent = "Ingen skabe fundet.";
       return;
     }
 
@@ -160,78 +126,45 @@ async function loadLockers() {
 
     });
 
-
     Object.keys(floors)
-      .sort((a, b) => Number(a) - Number(b))
+      .sort((a,b) => Number(a) - Number(b))
       .forEach(floor => {
 
-        const floorDiv =
-          document.createElement("div");
-
+        const floorDiv = document.createElement("div");
         floorDiv.className = "floor";
 
+        const title = document.createElement("h2");
 
-        const heading =
-          document.createElement("h2");
-
-        heading.textContent =
+        title.textContent =
           Number(floor) === 0
-            ? "Stuen"
-            : "Etage " + floor;
+          ? "Stuen"
+          : "Etage " + floor;
 
-        floorDiv.appendChild(heading);
+        floorDiv.appendChild(title);
 
-
-        const grid =
-          document.createElement("div");
-
+        const grid = document.createElement("div");
         grid.className = "lockers";
-
 
         floors[floor].forEach(locker => {
 
-          const box =
-            document.createElement("div");
+          const box = document.createElement("div");
 
           const available =
             locker.status !== "occupied";
 
           box.className =
             "locker " +
-            (available
-              ? "available"
-              : "occupied");
-
+            (available ? "available" : "occupied");
 
           box.innerHTML =
             "SKAB " +
             locker.locker_number +
-            "<div class='status'>" +
-            (available
-              ? "Ledigt"
-              : "Optaget") +
-            "</div>";
-
-
-          if (available) {
-
-            box.onclick = function() {
-
-              window.location.href =
-                "index.html?locker=" +
-                encodeURIComponent(
-                  locker.locker_number
-                );
-
-            };
-
-          }
-
+            "<br>" +
+            (available ? "Ledigt" : "Optaget");
 
           grid.appendChild(box);
 
         });
-
 
         floorDiv.appendChild(grid);
         container.appendChild(floorDiv);
@@ -242,15 +175,11 @@ async function loadLockers() {
 
     console.error(error);
 
-    message.className = "error";
-
     message.textContent =
-      "Der kunne ikke hentes skabe.";
+      "Fejl: " + error.message;
 
   }
-
 }
-
 
 loadLockers();
 
@@ -258,4 +187,3 @@ loadLockers();
 
 </body>
 </html>
-```
