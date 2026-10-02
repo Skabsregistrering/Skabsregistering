@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Admin – Skabsregistrering</title>
 
   <style>
@@ -147,6 +148,7 @@
 
   </div>
 
+
   <div id="adminContent">
 
     <button class="logout-button" id="logoutButton">
@@ -165,6 +167,7 @@
 
 </div>
 
+
 <script>
 
 const SUPABASE_URL =
@@ -176,6 +179,7 @@ const SUPABASE_KEY =
 let accessToken = "";
 let currentUser = null;
 let employeeMap = {};
+
 
 function escapeHtml(value) {
 
@@ -190,6 +194,7 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
+
 
 async function login() {
 
@@ -210,10 +215,12 @@ async function login() {
       `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
       {
         method: "POST",
+
         headers: {
           "Content-Type": "application/json",
           "apikey": SUPABASE_KEY
         },
+
         body: JSON.stringify({
           email: email,
           password: password
@@ -246,6 +253,7 @@ async function login() {
   }
 }
 
+
 async function loadAdmin() {
 
   const status =
@@ -255,15 +263,17 @@ async function loadAdmin() {
 
   try {
 
-    const headers = {
-      "apikey": SUPABASE_KEY,
-      "Authorization": `Bearer ${accessToken}`
-    };
+    /*
+      MEDARBEJDERE
+    */
 
     const employeesResponse = await fetch(
       `${SUPABASE_URL}/rest/v1/employees?select=id,employee_id,name,email`,
       {
-        headers: headers
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${accessToken}`
+        }
       }
     );
 
@@ -280,10 +290,18 @@ async function loadAdmin() {
       employeeMap[employee.id] = employee;
     });
 
+
+    /*
+      HISTORIK
+    */
+
     const historyResponse = await fetch(
       `${SUPABASE_URL}/rest/v1/locker_history?select=id,locker_number,floor,employee_id,employee_name,assigned_at,released_at,released_by&order=assigned_at.desc`,
       {
-        headers: headers
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${accessToken}`
+        }
       }
     );
 
@@ -294,19 +312,35 @@ async function loadAdmin() {
     const history =
       await historyResponse.json();
 
+
+    /*
+      SKABE
+      Brug publishable key her, som i den fungerende version.
+    */
+
     const lockersResponse = await fetch(
       `${SUPABASE_URL}/rest/v1/lockers?select=id,locker_number,floor,status,employee_id,assigned_at&order=locker_number`,
       {
-        headers: headers
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${SUPABASE_KEY}`
+        }
       }
     );
 
     if (!lockersResponse.ok) {
-      throw new Error("Kunne ikke hente skabe.");
+
+      const errorText =
+        await lockersResponse.text();
+
+      throw new Error(
+        `Kunne ikke hente skabe. Fejl ${lockersResponse.status}: ${errorText}`
+      );
     }
 
     const lockers =
       await lockersResponse.json();
+
 
     renderLockers(lockers, history);
 
@@ -321,6 +355,7 @@ async function loadAdmin() {
   }
 }
 
+
 function formatDate(date) {
 
   if (!date) {
@@ -330,6 +365,7 @@ function formatDate(date) {
   return new Date(date).toLocaleString("da-DK");
 }
 
+
 function renderLockers(lockers, history) {
 
   const container =
@@ -337,12 +373,14 @@ function renderLockers(lockers, history) {
 
   container.innerHTML = "";
 
+
   const floors = {
     0: "Stuen",
     1: "Etage 1",
     2: "Etage 2",
     3: "Etage 3"
   };
+
 
   for (let floor = 0; floor <= 3; floor++) {
 
@@ -353,10 +391,12 @@ function renderLockers(lockers, history) {
       continue;
     }
 
+
     const floorDiv =
       document.createElement("div");
 
     floorDiv.className = "floor";
+
 
     const title =
       document.createElement("h2");
@@ -365,6 +405,7 @@ function renderLockers(lockers, history) {
 
     floorDiv.appendChild(title);
 
+
     floorLockers.forEach(locker => {
 
       const employee =
@@ -372,10 +413,12 @@ function renderLockers(lockers, history) {
           ? employeeMap[locker.employee_id]
           : null;
 
+
       const lockerHistory =
         history.filter(item =>
           item.locker_number === locker.locker_number
         );
+
 
       const lockerDiv =
         document.createElement("div");
@@ -388,9 +431,11 @@ function renderLockers(lockers, history) {
             : "available"
         );
 
+
       let html = `
         <strong>Skab ${escapeHtml(locker.locker_number)}</strong><br><br>
       `;
+
 
       if (locker.status === "occupied") {
 
@@ -405,7 +450,11 @@ function renderLockers(lockers, history) {
 
           <button
             class="release-button"
-            onclick="releaseLocker('${locker.id}', '${locker.locker_number}', '${locker.employee_id}')"
+            onclick="releaseLocker(
+              '${locker.id}',
+              '${locker.locker_number}',
+              '${locker.employee_id}'
+            )"
           >
             Frigiv skab
           </button>
@@ -418,6 +467,7 @@ function renderLockers(lockers, history) {
         `;
       }
 
+
       if (lockerHistory.length > 0) {
 
         html += `
@@ -427,12 +477,14 @@ function renderLockers(lockers, history) {
             </summary>
         `;
 
+
         lockerHistory.forEach(item => {
 
           const releasedText =
             item.released_at
               ? `Frigivet: ${formatDate(item.released_at)}`
               : "Ikke frigivet";
+
 
           html += `
             <div class="history-item">
@@ -443,19 +495,23 @@ function renderLockers(lockers, history) {
           `;
         });
 
+
         html += `
           </details>
         `;
       }
+
 
       lockerDiv.innerHTML = html;
 
       floorDiv.appendChild(lockerDiv);
     });
 
+
     container.appendChild(floorDiv);
   }
 }
+
 
 async function releaseLocker(
   lockerId,
@@ -469,28 +525,37 @@ async function releaseLocker(
     return;
   }
 
+
   const headers = {
     "apikey": SUPABASE_KEY,
     "Authorization": `Bearer ${accessToken}`,
     "Content-Type": "application/json"
   };
 
+
   try {
+
+    /*
+      Opdater historikken først.
+    */
 
     const historyResponse = await fetch(
       `${SUPABASE_URL}/rest/v1/locker_history?locker_number=eq.${encodeURIComponent(lockerNumber)}&employee_id=eq.${encodeURIComponent(employeeId)}&released_at=is.null&order=assigned_at.desc&limit=1`,
       {
         method: "PATCH",
+
         headers: {
           ...headers,
           "Prefer": "return=minimal"
         },
+
         body: JSON.stringify({
           released_at: new Date().toISOString(),
           released_by: currentUser.id
         })
       }
     );
+
 
     if (!historyResponse.ok) {
 
@@ -503,14 +568,21 @@ async function releaseLocker(
       );
     }
 
+
+    /*
+      Frigiv selve skabet.
+    */
+
     const lockerResponse = await fetch(
       `${SUPABASE_URL}/rest/v1/lockers?id=eq.${encodeURIComponent(lockerId)}`,
       {
         method: "PATCH",
+
         headers: {
           ...headers,
           "Prefer": "return=minimal"
         },
+
         body: JSON.stringify({
           status: "available",
           employee_id: null,
@@ -518,6 +590,7 @@ async function releaseLocker(
         })
       }
     );
+
 
     if (!lockerResponse.ok) {
 
@@ -530,6 +603,7 @@ async function releaseLocker(
       );
     }
 
+
     await loadAdmin();
 
   } catch (error) {
@@ -537,6 +611,7 @@ async function releaseLocker(
     alert(error.message);
   }
 }
+
 
 async function logout() {
 
@@ -546,6 +621,7 @@ async function logout() {
       `${SUPABASE_URL}/auth/v1/logout`,
       {
         method: "POST",
+
         headers: {
           "apikey": SUPABASE_KEY,
           "Authorization": `Bearer ${accessToken}`
@@ -556,6 +632,7 @@ async function logout() {
   } catch (error) {
   }
 
+
   accessToken = "";
   currentUser = null;
 
@@ -565,9 +642,11 @@ async function logout() {
   document.getElementById("loginStatus").textContent = "";
 }
 
+
 document
   .getElementById("loginButton")
   .addEventListener("click", login);
+
 
 document
   .getElementById("logoutButton")
