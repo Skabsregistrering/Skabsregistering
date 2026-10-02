@@ -4,7 +4,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Skabsregistrering – Admin</title>
 
   <style>
@@ -157,40 +156,31 @@
 
 <script>
 
-const SUPABASE_URL =
-  "https://pwgwujojffxinfbqjlyb.supabase.co";
+const SUPABASE_URL = "https://pwgwujojffxinfbqjlyb.supabase.co";
 
-const SUPABASE_KEY =
-  "sb_publishable_XU7y4WVGX4Osj7ixgRIfDA_mHpJ1ttv";
+const SUPABASE_KEY = "sb_publishable_XU7y4WVGX4Osj7ixgRIfDA_mHpJ1ttv";
 
 let accessToken = null;
 
 
 async function login() {
 
-  const email =
-    document.getElementById("email").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const loginStatus = document.getElementById("loginStatus");
 
-  const password =
-    document.getElementById("password").value;
-
-  const status =
-    document.getElementById("loginStatus");
-
-  status.textContent = "Logger ind...";
+  loginStatus.textContent = "Logger ind...";
 
   try {
 
     const response = await fetch(
-      `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
+      SUPABASE_URL + "/auth/v1/token?grant_type=password",
       {
         method: "POST",
-
         headers: {
           "Content-Type": "application/json",
           "apikey": SUPABASE_KEY
         },
-
         body: JSON.stringify({
           email: email,
           password: password
@@ -217,19 +207,19 @@ async function login() {
 
   } catch (error) {
 
-    status.innerHTML =
-      `<div class="error">${error.message}</div>`;
+    loginStatus.innerHTML =
+      '<div class="error">' +
+      error.message +
+      '</div>';
+
   }
 }
 
 
 async function loadLockers() {
 
-  const container =
-    document.getElementById("lockers");
-
-  const status =
-    document.getElementById("status");
+  const container = document.getElementById("lockers");
+  const status = document.getElementById("status");
 
   container.innerHTML = "Indlæser skabe...";
   status.innerHTML = "";
@@ -237,30 +227,29 @@ async function loadLockers() {
   try {
 
     const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/lockers?select=locker_number,floor,status,employee_id,assigned_at&order=locker_number`,
+      SUPABASE_URL +
+      "/rest/v1/lockers?select=locker_number,floor,status,employee_id,assigned_at&order=locker_number",
       {
+        method: "GET",
         headers: {
           "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`
+          "Authorization": "Bearer " + SUPABASE_KEY
         }
       }
     );
 
+    const text = await response.text();
+
     if (!response.ok) {
-
-      const errorText =
-        await response.text();
-
       throw new Error(
-        `Fejl ${response.status}: ${errorText}`
+        "Fejl " + response.status + ": " + text
       );
     }
 
-    const lockers =
-      await response.json();
+    const lockers = JSON.parse(text);
 
     if (!Array.isArray(lockers)) {
-      throw new Error("Supabase returnerede ikke en liste.");
+      throw new Error("Ugyldigt svar fra Supabase.");
     }
 
     container.innerHTML = "";
@@ -272,76 +261,66 @@ async function loadLockers() {
       3: "Etage 3"
     };
 
-
     for (let floor = 0; floor <= 3; floor++) {
 
-      const floorLockers =
-        lockers.filter(
-          locker => Number(locker.floor) === floor
-        );
+      const floorLockers = lockers.filter(function(locker) {
+        return Number(locker.floor) === floor;
+      });
 
       if (floorLockers.length === 0) {
         continue;
       }
 
-
-      const floorDiv =
-        document.createElement("div");
-
+      const floorDiv = document.createElement("div");
       floorDiv.className = "floor";
 
-
-      const title =
-        document.createElement("h2");
-
-      title.textContent =
-        floors[floor];
+      const title = document.createElement("h2");
+      title.textContent = floors[floor];
 
       floorDiv.appendChild(title);
 
+      floorLockers.forEach(function(locker) {
 
-      floorLockers.forEach(locker => {
+        const div = document.createElement("div");
 
-        const div =
-          document.createElement("div");
+        div.className = "locker";
 
-        div.className =
-          "locker " +
-          (
-            locker.status === "occupied"
-              ? "occupied"
-              : ""
-          );
-
+        if (locker.status === "occupied") {
+          div.classList.add("occupied");
+        }
 
         let html =
-          `<strong>Skab ${locker.locker_number}</strong><br>`;
+          "<strong>Skab " +
+          locker.locker_number +
+          "</strong><br>";
 
         html +=
-          `Status: ${locker.status}<br>`;
-
+          "Status: " +
+          locker.status +
+          "<br>";
 
         if (locker.assigned_at) {
 
           html +=
-            `Registreret: ${
-              new Date(
-                locker.assigned_at
-              ).toLocaleString("da-DK")
-            }<br>`;
-        }
+            "Registreret: " +
+            new Date(
+              locker.assigned_at
+            ).toLocaleString("da-DK") +
+            "<br>";
 
+        }
 
         if (locker.status === "occupied") {
 
           html +=
-            `<button
-              class="release"
-              onclick="releaseLocker('${locker.locker_number}')">
-              Frigiv skab
-            </button>`;
-        }
+            '<button class="release" ' +
+            'onclick="releaseLocker(\'' +
+            locker.locker_number +
+            '\')">' +
+            'Frigiv skab' +
+            '</button>';
 
+        }
 
         div.innerHTML = html;
 
@@ -349,32 +328,23 @@ async function loadLockers() {
 
       });
 
-
       container.appendChild(floorDiv);
     }
 
-
-    if (container.children.length === 0) {
-
-      container.innerHTML =
-        "<strong>Ingen skabe kunne vises.</strong>";
-
-      throw new Error(
-        "Der blev hentet skabe, men ingen etager kunne vises."
-      );
-    }
-
-
     status.innerHTML =
-      `<div class="success">
-        ${lockers.length} skabe indlæst.
-      </div>`;
-
+      '<div class="success">' +
+      lockers.length +
+      ' skabe indlæst.</div>';
 
   } catch (error) {
 
+    container.innerHTML = "";
+
     status.innerHTML =
-      `<div class="error">${error.message}</div>`;
+      '<div class="error">' +
+      error.message +
+      '</div>';
+
   }
 }
 
@@ -382,64 +352,67 @@ async function loadLockers() {
 async function releaseLocker(lockerNumber) {
 
   if (!confirm(
-    `Vil du frigive skab ${lockerNumber}?`
+    "Vil du frigive skab " +
+    lockerNumber +
+    "?"
   )) {
     return;
   }
 
-
   const status =
     document.getElementById("status");
 
-
   try {
 
-    const response =
-      await fetch(
-        `${SUPABASE_URL}/rest/v1/lockers?locker_number=eq.${encodeURIComponent(lockerNumber)}`,
-        {
-          method: "PATCH",
-
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": SUPABASE_KEY,
-            "Authorization": `Bearer ${SUPABASE_KEY}`,
-            "Prefer": "return=minimal"
-          },
-
-          body: JSON.stringify({
-            status: "available",
-            employee_id: null,
-            assigned_at: null
-          })
-        }
-      );
-
+    const response = await fetch(
+      SUPABASE_URL +
+      "/rest/v1/lockers?locker_number=eq." +
+      encodeURIComponent(lockerNumber),
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + SUPABASE_KEY,
+          "Prefer": "return=minimal"
+        },
+        body: JSON.stringify({
+          status: "available",
+          employee_id: null,
+          assigned_at: null
+        })
+      }
+    );
 
     if (!response.ok) {
 
-      const errorText =
+      const text =
         await response.text();
 
       throw new Error(
-        `Fejl ${response.status}: ${errorText}`
+        "Fejl " +
+        response.status +
+        ": " +
+        text
       );
     }
 
-
     status.innerHTML =
-      `<div class="success">
-        Skab ${lockerNumber} er frigivet.
-      </div>`;
-
+      '<div class="success">' +
+      'Skab ' +
+      lockerNumber +
+      ' er frigivet.' +
+      '</div>';
 
     loadLockers();
-
 
   } catch (error) {
 
     status.innerHTML =
-      `<div class="error">${error.message}</div>`;
+      '<div class="error">' +
+      error.message +
+      '</div>';
+
   }
 }
 
@@ -449,17 +422,14 @@ function logout() {
   accessToken = null;
 
   document.getElementById("adminBox").style.display = "none";
+
   document.getElementById("loginBox").style.display = "block";
 
   document.getElementById("password").value = "";
+
 }
 
 </script>
 
 </body>
 </html>
-```
-
-**Commit changes.**
-
-Når den er committed, åbn admin og log ind. Skriv bare **færdig**.
