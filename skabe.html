@@ -63,6 +63,22 @@
       cursor: not-allowed;
     }
 
+    .defect {
+      background: #eab308;
+      cursor: not-allowed;
+    }
+
+    .legend {
+      margin: 20px auto 30px auto;
+      font-size: 16px;
+    }
+
+    .legend span {
+      display: inline-block;
+      margin: 5px 10px;
+      font-weight: bold;
+    }
+
     .status {
       margin-top: 25px;
       font-size: 18px;
@@ -73,6 +89,12 @@
 <body>
 
   <h1>Vælg et skab</h1>
+
+  <div class="legend">
+    <span>🟢 Ledigt</span>
+    <span>🔴 Optaget</span>
+    <span>🟡 Defekt</span>
+  </div>
 
   <div id="lockers">
     Indlæser skabe...
@@ -88,6 +110,7 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
   "sb_publishable_XU7y4WVGX4Osj7ixgRIfDA_mHpJ1ttv";
 
+
 async function loadLockers() {
 
   const container = document.getElementById("lockers");
@@ -96,7 +119,7 @@ async function loadLockers() {
   try {
 
     const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/lockers?select=locker_number,floor,status`,
+      `${SUPABASE_URL}/rest/v1/lockers?select=locker_number,floor,status,defect`,
       {
         headers: {
           "apikey": SUPABASE_KEY,
@@ -119,23 +142,6 @@ async function loadLockers() {
 
     const data = await response.json();
 
-    /*
-      Sorterer alle skabe numerisk.
-
-      Det betyder f.eks.:
-
-      0.007
-      0.008
-      0.009
-      ...
-      0.184
-      1.001
-      ...
-      2.208
-      ...
-      3.256
-    */
-
     data.sort((a, b) =>
       a.locker_number.localeCompare(
         b.locker_number,
@@ -156,7 +162,7 @@ async function loadLockers() {
     for (let floor = 0; floor <= 3; floor++) {
 
       const floorLockers = data.filter(
-        locker => locker.floor === floor
+        locker => Number(locker.floor) === floor
       );
 
       if (floorLockers.length === 0) {
@@ -178,15 +184,23 @@ async function loadLockers() {
 
         const lockerDiv = document.createElement("div");
 
+        let lockerClass = "occupied";
+
+        if (locker.defect === true) {
+          lockerClass = "defect";
+        } else if (locker.status === "available") {
+          lockerClass = "available";
+        }
+
         lockerDiv.className =
-          "locker " +
-          (locker.status === "available"
-            ? "available"
-            : "occupied");
+          "locker " + lockerClass;
 
         lockerDiv.textContent = locker.locker_number;
 
-        if (locker.status === "available") {
+        if (
+          locker.status === "available" &&
+          locker.defect !== true
+        ) {
 
           lockerDiv.onclick = function() {
 
@@ -208,7 +222,7 @@ async function loadLockers() {
     }
 
     status.textContent =
-      "Grøn = ledigt · Rød = optaget";
+      "Grøn = ledigt · Rød = optaget · Gul = defekt";
 
   } catch (error) {
 
