@@ -306,10 +306,11 @@ async function loadAdmin() {
 
 
     const lockersResponse = await fetch(
-      `${SUPABASE_URL}/rest/v1/lockers?select=id,locker_number,floor,status,employee_id,assigned_at&order=locker_number`,
+      `${SUPABASE_URL}/rest/v1/lockers?select=id,locker_number,floor,status,employee_id,assigned_at,locker_code&order=locker_number`,
       {
         headers: {
-          "apikey": SUPABASE_KEY
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${accessToken}`
         }
       }
     );
@@ -433,6 +434,8 @@ function renderLockers(lockers, history) {
           ${escapeHtml(employee?.name || "Ukendt")}<br>
           <strong>E-mail:</strong>
           ${escapeHtml(employee?.email || "Ukendt")}<br>
+          <strong>4-cifret kode:</strong>
+          ${escapeHtml(locker.locker_code || "Ingen kode")}<br>
           <strong>Registreret:</strong>
           ${formatDate(locker.assigned_at)}<br>
 
