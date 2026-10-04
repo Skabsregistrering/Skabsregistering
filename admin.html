@@ -192,6 +192,12 @@
       font-weight: bold;
     }
 
+    .email-link {
+      color: #2563eb;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
     #adminContent {
       display: none;
     }
@@ -676,6 +682,29 @@ function createTaskElement(
       ? "task-status-completed"
       : "task-status-open";
 
+  const employeeEmail =
+    task.employee_email ||
+    "";
+
+  let emailHtml;
+
+  if (employeeEmail) {
+
+    emailHtml = `
+      <a
+        class="email-link"
+        href="mailto:${encodeURIComponent(employeeEmail)}"
+      >
+        ${escapeHtml(employeeEmail)}
+      </a>
+    `;
+
+  } else {
+
+    emailHtml = "Ukendt";
+
+  }
+
   let html = `
 
     <div class="task-title">
@@ -692,10 +721,7 @@ function createTaskElement(
     <br>
 
     <strong>Norlys-mail:</strong>
-    ${escapeHtml(
-      task.employee_email ||
-      "Ukendt"
-    )}
+    ${emailHtml}
     <br>
 
     <strong>Type:</strong>
