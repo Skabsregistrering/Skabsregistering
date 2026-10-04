@@ -27,6 +27,10 @@
       text-align: center;
     }
 
+    h2 {
+      margin-top: 30px;
+    }
+
     input {
       width: 100%;
       box-sizing: border-box;
@@ -55,6 +59,12 @@
 
     .release-button {
       background: #ef4444;
+      color: white;
+      margin-top: 10px;
+    }
+
+    .complete-button {
+      background: #22c55e;
       color: white;
       margin-top: 10px;
     }
@@ -102,6 +112,36 @@
       font-size: 14px;
     }
 
+    .task {
+      border: 1px solid #ddd;
+      border-left: 6px solid #f59e0b;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 10px 0;
+      background: #fff;
+    }
+
+    .task.completed {
+      border-left-color: #22c55e;
+      opacity: 0.75;
+    }
+
+    .task-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .task-status-open {
+      color: #dc2626;
+      font-weight: bold;
+    }
+
+    .task-status-completed {
+      color: #16a34a;
+      font-weight: bold;
+    }
+
     .error {
       color: #dc2626;
       margin-top: 10px;
@@ -110,6 +150,11 @@
     .success {
       color: #16a34a;
       margin-top: 10px;
+    }
+
+    .task-status {
+      margin-top: 20px;
+      margin-bottom: 15px;
     }
 
     #adminContent {
@@ -157,7 +202,18 @@
 
     <h1>Skabsregistrering – Admin</h1>
 
+
+    <h2>📋 Opgaver</h2>
+
+    <div id="tasks">
+      Henter opgaver...
+    </div>
+
+
     <div id="status"></div>
+
+
+    <h2>🔐 Skabe</h2>
 
     <div id="lockers">
       Indlæser skabe...
@@ -263,6 +319,9 @@ async function loadAdmin() {
 
   try {
 
+    await loadTasks();
+
+
     const employeesResponse = await fetch(
       `${SUPABASE_URL}/rest/v1/employees?select=id,employee_id,name,email`,
       {
@@ -343,6 +402,215 @@ async function loadAdmin() {
 }
 
 
+async function loadTasks() {
+
+  const container =
+    document.getElementById("tasks");
+
+  container.innerHTML =
+    "Henter opgaver...";
+
+
+  try {
+
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/locker_requests?select=id,locker_number,employee_name,employee_email,request_type,message,status,created_at,completed_at&order=created_at.desc`,
+      {
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${accessToken}`
+        }
+      }
+    );
+
+
+    if (!response.ok) {
+
+      const errorText =
+        await response.text();
+
+      throw new Error(
+        `Kunne ikke hente opgaver. Fejl ${response.status}: ${errorText}`
+      );
+    }
+
+
+    const tasks =
+      await response.json();
+
+
+    if (tasks.length === 0) {
+
+      container.innerHTML =
+        "<p>Ingen opgaver.</p>";
+
+      return;
+    }
+
+
+    container.innerHTML = "";
+
+
+    tasks.forEach(task => {
+
+      const div =
+        document.createElement("div");
+
+
+      div.className =
+        "task " +
+        (
+          task.status === "completed"
+            ? "completed"
+            : ""
+        );
+
+
+      const statusText =
+        task.status === "completed"
+          ? "Færdig"
+          : "Åben";
+
+
+      const statusClass =
+        task.status === "completed"
+          ? "task-status-completed"
+          : "task-status-open";
+
+
+      let html = `
+
+        <div class="task-title">
+          Skab ${escapeHtml(task.locker_number)}
+        </div>
+
+        <strong>Medarbejder:</strong>
+        ${escapeHtml(task.employee_name || "Ukendt")}<br>
+
+        <strong>Norlys-mail:</strong>
+        ${escapeHtml(task.employee_email || "Ukendt")}<br>
+
+        <strong>Type:</strong>
+        ${escapeHtml(task.request_type || "-")}<br>
+
+        <strong>Beskrivelse:</strong>
+        ${escapeHtml(task.message || "Ingen beskrivelse")}<br>
+
+        <div class="task-status">
+          <strong>Status:</strong>
+          <span class="${statusClass}">
+            ${statusText}
+          </span>
+        </div>
+      `;
+
+
+      if (task.status !== "completed") {
+
+        html += `
+
+          <button
+            class="complete-button"
+            onclick="completeTask('${task.id}')"
+          >
+            ✅ Færdig
+          </button>
+
+        `;
+
+      } else {
+
+        html += `
+          <strong>Færdiggjort:</strong>
+          ${formatDate(task.completed_at)}
+        `;
+
+      }
+
+
+      div.innerHTML =
+        html;
+
+
+      container.appendChild(div);
+
+    });
+
+
+  } catch (error) {
+
+    container.innerHTML =
+      `<div class="error">${escapeHtml(error.message)}</div>`;
+
+  }
+
+}
+
+
+async function completeTask(taskId) {
+
+  if (!confirm(
+    "Er opgaven færdigbehandlet?"
+  )) {
+    return;
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/locker_requests?id=eq.${encodeURIComponent(taskId)}`,
+        {
+          method: "PATCH",
+
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal"
+          },
+
+          body: JSON.stringify({
+
+            status:
+              "completed",
+
+            completed_at:
+              new Date().toISOString(),
+
+            completed_by:
+              currentUser.id
+
+          })
+        }
+      );
+
+
+    if (!response.ok) {
+
+      const errorText =
+        await response.text();
+
+      throw new Error(
+        `Kunne ikke færdiggøre opgaven: ${errorText}`
+      );
+
+    }
+
+
+    await loadTasks();
+
+
+  } catch (error) {
+
+    alert(error.message);
+
+  }
+
+}
+
+
 function formatDate(date) {
 
   if (!date) {
@@ -376,6 +644,7 @@ function renderLockers(lockers, history) {
         Number(locker.floor) === floor
       );
 
+
     if (floorLockers.length === 0) {
       continue;
     }
@@ -390,7 +659,8 @@ function renderLockers(lockers, history) {
     const title =
       document.createElement("h2");
 
-    title.textContent = floors[floor];
+    title.textContent =
+      floors[floor];
 
     floorDiv.appendChild(title);
 
@@ -411,6 +681,7 @@ function renderLockers(lockers, history) {
 
       const lockerDiv =
         document.createElement("div");
+
 
       lockerDiv.className =
         "locker " +
@@ -493,14 +764,22 @@ function renderLockers(lockers, history) {
       }
 
 
-      lockerDiv.innerHTML = html;
+      lockerDiv.innerHTML =
+        html;
 
-      floorDiv.appendChild(lockerDiv);
+      floorDiv.appendChild(
+        lockerDiv
+      );
+
     });
 
 
-    container.appendChild(floorDiv);
+    container.appendChild(
+      floorDiv
+    );
+
   }
+
 }
 
 
@@ -519,24 +798,30 @@ async function releaseLocker(
 
   try {
 
-    const historyResponse = await fetch(
-      `${SUPABASE_URL}/rest/v1/locker_history?locker_number=eq.${encodeURIComponent(lockerNumber)}&employee_id=eq.${encodeURIComponent(employeeId)}&released_at=is.null&order=assigned_at.desc&limit=1`,
-      {
-        method: "PATCH",
+    const historyResponse =
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/locker_history?locker_number=eq.${encodeURIComponent(lockerNumber)}&employee_id=eq.${encodeURIComponent(employeeId)}&released_at=is.null&order=assigned_at.desc&limit=1`,
+        {
+          method: "PATCH",
 
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-          "Prefer": "return=minimal"
-        },
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal"
+          },
 
-        body: JSON.stringify({
-          released_at: new Date().toISOString(),
-          released_by: currentUser.id
-        })
-      }
-    );
+          body: JSON.stringify({
+
+            released_at:
+              new Date().toISOString(),
+
+            released_by:
+              currentUser.id
+
+          })
+        }
+      );
 
 
     if (!historyResponse.ok) {
@@ -551,24 +836,33 @@ async function releaseLocker(
     }
 
 
-    const lockerResponse = await fetch(
-      `${SUPABASE_URL}/rest/v1/lockers?id=eq.${encodeURIComponent(lockerId)}`,
-      {
-        method: "PATCH",
+    const lockerResponse =
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/lockers?id=eq.${encodeURIComponent(lockerId)}`,
+        {
+          method: "PATCH",
 
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Content-Type": "application/json",
-          "Prefer": "return=minimal"
-        },
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal"
+          },
 
-        body: JSON.stringify({
-          status: "available",
-          employee_id: null,
-          assigned_at: null
-        })
-      }
-    );
+          body: JSON.stringify({
+
+            status:
+              "available",
+
+            employee_id:
+              null,
+
+            assigned_at:
+              null
+
+          })
+        }
+      );
 
 
     if (!lockerResponse.ok) {
@@ -585,10 +879,13 @@ async function releaseLocker(
 
     await loadAdmin();
 
+
   } catch (error) {
 
     alert(error.message);
+
   }
+
 }
 
 
@@ -615,21 +912,38 @@ async function logout() {
   accessToken = "";
   currentUser = null;
 
-  document.getElementById("adminContent").style.display = "none";
-  document.getElementById("loginBox").style.display = "block";
 
-  document.getElementById("loginStatus").textContent = "";
+  document
+    .getElementById("adminContent")
+    .style.display = "none";
+
+
+  document
+    .getElementById("loginBox")
+    .style.display = "block";
+
+
+  document
+    .getElementById("loginStatus")
+    .textContent = "";
+
 }
 
 
 document
   .getElementById("loginButton")
-  .addEventListener("click", login);
+  .addEventListener(
+    "click",
+    login
+  );
 
 
 document
   .getElementById("logoutButton")
-  .addEventListener("click", logout);
+  .addEventListener(
+    "click",
+    logout
+  );
 
 </script>
 
