@@ -69,6 +69,19 @@
       margin-top: 10px;
     }
 
+    .defect-button {
+      background: #eab308;
+      color: white;
+      margin-top: 10px;
+      margin-right: 5px;
+    }
+
+    .repair-button {
+      background: #22c55e;
+      color: white;
+      margin-top: 10px;
+    }
+
     .logout-button {
       background: #555;
       color: white;
@@ -99,6 +112,11 @@
 
     .occupied {
       border-left: 6px solid #ef4444;
+    }
+
+    .defective {
+      border-left: 6px solid #eab308;
+      background: #fffbea;
     }
 
     .history {
@@ -167,6 +185,11 @@
     .success {
       color: #16a34a;
       margin-top: 10px;
+    }
+
+    .defect-status {
+      color: #ca8a04;
+      font-weight: bold;
     }
 
     #adminContent {
@@ -350,7 +373,6 @@ async function login() {
     accessToken = data.access_token;
     currentUser = data.user;
 
-
     localStorage.setItem(
       "admin_access_token",
       accessToken
@@ -360,7 +382,6 @@ async function login() {
       "admin_user",
       JSON.stringify(currentUser)
     );
-
 
     showAdmin();
 
@@ -405,11 +426,9 @@ async function loadAdmin() {
   status.textContent =
     "Henter data...";
 
-
   try {
 
     await loadTasks();
-
 
     const employeesResponse =
       await fetch(
@@ -422,7 +441,6 @@ async function loadAdmin() {
         }
       );
 
-
     if (!employeesResponse.ok) {
 
       throw new Error(
@@ -431,12 +449,10 @@ async function loadAdmin() {
 
     }
 
-
     const employees =
       await employeesResponse.json();
 
     employeeMap = {};
-
 
     employees.forEach(employee => {
 
@@ -457,7 +473,6 @@ async function loadAdmin() {
         }
       );
 
-
     if (!historyResponse.ok) {
 
       throw new Error(
@@ -466,14 +481,13 @@ async function loadAdmin() {
 
     }
 
-
     const history =
       await historyResponse.json();
 
 
     const lockersResponse =
       await fetch(
-        `${SUPABASE_URL}/rest/v1/lockers?select=id,locker_number,floor,status,employee_id,assigned_at,locker_code&order=locker_number`,
+        `${SUPABASE_URL}/rest/v1/lockers?select=id,locker_number,floor,status,employee_id,assigned_at,locker_code,defect&order=locker_number`,
         {
           headers: {
             "apikey": SUPABASE_KEY,
@@ -481,7 +495,6 @@ async function loadAdmin() {
           }
         }
       );
-
 
     if (!lockersResponse.ok) {
 
@@ -494,23 +507,19 @@ async function loadAdmin() {
 
     }
 
-
     const lockers =
       await lockersResponse.json();
-
 
     renderLockers(
       lockers,
       history
     );
 
-
     status.className =
       "success";
 
     status.textContent =
       `${lockers.length} skabe indlæst.`;
-
 
   } catch (error) {
 
@@ -537,10 +546,8 @@ async function loadTasks() {
   const completedContainer =
     document.getElementById("completedTasks");
 
-
   openContainer.innerHTML =
     "Henter opgaver...";
-
 
   try {
 
@@ -555,7 +562,6 @@ async function loadTasks() {
         }
       );
 
-
     if (!response.ok) {
 
       const errorText =
@@ -567,24 +573,19 @@ async function loadTasks() {
 
     }
 
-
     const tasks =
       await response.json();
-
 
     const openTasks =
       tasks.filter(task =>
         task.status !== "completed"
       );
 
-
     const completedTasks =
       tasks.filter(task =>
         task.status === "completed"
       );
 
-
-    /* ÅBNE OPGAVER */
 
     if (openTasks.length === 0) {
 
@@ -609,10 +610,7 @@ async function loadTasks() {
     }
 
 
-    /* AFSLUTTEDE OPGAVER */
-
     completedContainer.innerHTML = "";
-
 
     if (completedTasks.length === 0) {
 
@@ -634,12 +632,10 @@ async function loadTasks() {
 
     }
 
-
     completedContainer.style.display =
       completedTasksVisible
         ? "block"
         : "none";
-
 
   } catch (error) {
 
@@ -665,24 +661,20 @@ function createTaskElement(
   const div =
     document.createElement("div");
 
-
   div.className =
     completed
       ? "task completed-task"
       : "task";
-
 
   const statusText =
     completed
       ? "Færdig"
       : "Åben";
 
-
   const statusClass =
     completed
       ? "task-status-completed"
       : "task-status-open";
-
 
   let html = `
 
@@ -737,7 +729,6 @@ function createTaskElement(
 
   `;
 
-
   if (!completed) {
 
     html += `
@@ -764,10 +755,8 @@ function createTaskElement(
 
   }
 
-
   div.innerHTML =
     html;
-
 
   return div;
 
@@ -790,16 +779,13 @@ function toggleCompletedTasks() {
       "completedToggleButton"
     );
 
-
   completedTasksVisible =
     !completedTasksVisible;
-
 
   container.style.display =
     completedTasksVisible
       ? "block"
       : "none";
-
 
   button.textContent =
     completedTasksVisible
@@ -822,7 +808,6 @@ async function completeTask(
   )) {
     return;
   }
-
 
   try {
 
@@ -864,7 +849,6 @@ async function completeTask(
         }
       );
 
-
     if (!response.ok) {
 
       const errorText =
@@ -876,9 +860,7 @@ async function completeTask(
 
     }
 
-
     await loadTasks();
-
 
   } catch (error) {
 
@@ -907,7 +889,6 @@ function renderLockers(
 
   container.innerHTML = "";
 
-
   const floors = {
 
     0: "Stuen",
@@ -929,13 +910,11 @@ function renderLockers(
         Number(locker.floor) === floor
       );
 
-
     if (
       floorLockers.length === 0
     ) {
       continue;
     }
-
 
     const floorDiv =
       document.createElement(
@@ -944,7 +923,6 @@ function renderLockers(
 
     floorDiv.className =
       "floor";
-
 
     const title =
       document.createElement(
@@ -969,13 +947,11 @@ function renderLockers(
               ]
             : null;
 
-
         const lockerHistory =
           history.filter(item =>
             item.locker_number ===
             locker.locker_number
           );
-
 
         const lockerDiv =
           document.createElement(
@@ -983,14 +959,23 @@ function renderLockers(
           );
 
 
-        lockerDiv.className =
-          "locker " +
-          (
-            locker.status ===
-            "occupied"
-              ? "occupied"
-              : "available"
-          );
+        if (locker.defect === true) {
+
+          lockerDiv.className =
+            "locker defective";
+
+        } else {
+
+          lockerDiv.className =
+            "locker " +
+            (
+              locker.status ===
+              "occupied"
+                ? "occupied"
+                : "available"
+            );
+
+        }
 
 
         let html = `
@@ -1006,7 +991,30 @@ function renderLockers(
         `;
 
 
-        if (
+        if (locker.defect === true) {
+
+          html += `
+
+            <strong>Status:</strong>
+            <span class="defect-status">
+              🟡 DEFEKT
+            </span>
+            <br>
+
+            <button
+              class="repair-button"
+              onclick="setLockerDefect(
+                '${locker.id}',
+                '${locker.locker_number}',
+                false
+              )"
+            >
+              🟢 Markér som repareret
+            </button>
+
+          `;
+
+        } else if (
           locker.status ===
           "occupied"
         ) {
@@ -1055,6 +1063,19 @@ function renderLockers(
               Frigiv skab
             </button>
 
+            <br>
+
+            <button
+              class="defect-button"
+              onclick="setLockerDefect(
+                '${locker.id}',
+                '${locker.locker_number}',
+                true
+              )"
+            >
+              🟡 Markér som defekt
+            </button>
+
           `;
 
         } else {
@@ -1063,6 +1084,18 @@ function renderLockers(
 
             <strong>Status:</strong>
             Ledigt
+            <br>
+
+            <button
+              class="defect-button"
+              onclick="setLockerDefect(
+                '${locker.id}',
+                '${locker.locker_number}',
+                true
+              )"
+            >
+              🟡 Markér som defekt
+            </button>
 
           `;
 
@@ -1095,7 +1128,6 @@ function renderLockers(
                        item.released_at
                      )}`
                   : "Ikke frigivet";
-
 
               html += `
 
@@ -1146,6 +1178,87 @@ function renderLockers(
 
     container.appendChild(
       floorDiv
+    );
+
+  }
+
+}
+
+
+/* =========================
+   MARKÉR DEFEKT / REPARERET
+========================= */
+
+async function setLockerDefect(
+  lockerId,
+  lockerNumber,
+  isDefect
+) {
+
+  const question =
+    isDefect
+      ? `Vil du markere skab ${lockerNumber} som defekt?`
+      : `Er skab ${lockerNumber} blevet repareret?`;
+
+  if (!confirm(question)) {
+    return;
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/lockers?id=eq.${encodeURIComponent(lockerId)}`,
+        {
+          method: "PATCH",
+
+          headers: {
+
+            "apikey":
+              SUPABASE_KEY,
+
+            "Authorization":
+              `Bearer ${accessToken}`,
+
+            "Content-Type":
+              "application/json",
+
+            "Prefer":
+              "return=minimal"
+
+          },
+
+          body: JSON.stringify({
+
+            defect:
+              isDefect
+
+          })
+
+        }
+      );
+
+
+    if (!response.ok) {
+
+      const errorText =
+        await response.text();
+
+      throw new Error(
+        `Kunne ikke ændre skabets status: ${errorText}`
+      );
+
+    }
+
+
+    await loadAdmin();
+
+
+  } catch (error) {
+
+    alert(
+      error.message
     );
 
   }
@@ -1329,7 +1442,6 @@ async function logout() {
     "admin_user"
   );
 
-
   accessToken = "";
   currentUser = null;
 
@@ -1382,7 +1494,6 @@ async function startAdmin() {
         JSON.parse(
           savedUser
         );
-
 
       showAdmin();
 
