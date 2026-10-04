@@ -31,6 +31,14 @@
       margin-top: 30px;
     }
 
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
     input {
       width: 100%;
       box-sizing: border-box;
@@ -39,14 +47,6 @@
       font-size: 16px;
       border: 1px solid #ccc;
       border-radius: 6px;
-    }
-
-    button {
-      padding: 10px 15px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
     }
 
     .login-button {
@@ -73,6 +73,12 @@
       background: #555;
       color: white;
       float: right;
+    }
+
+    .history-button {
+      background: #555;
+      color: white;
+      margin-top: 10px;
     }
 
     .floor {
@@ -121,15 +127,15 @@
       background: #fff;
     }
 
-    .task.completed {
-      border-left-color: #22c55e;
-      opacity: 0.75;
-    }
-
     .task-title {
       font-size: 18px;
       font-weight: bold;
       margin-bottom: 10px;
+    }
+
+    .task-status {
+      margin-top: 20px;
+      margin-bottom: 15px;
     }
 
     .task-status-open {
@@ -142,6 +148,17 @@
       font-weight: bold;
     }
 
+    .completed-section {
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid #ddd;
+    }
+
+    .completed-task {
+      border-left-color: #22c55e;
+      opacity: 0.8;
+    }
+
     .error {
       color: #dc2626;
       margin-top: 10px;
@@ -152,12 +169,11 @@
       margin-top: 10px;
     }
 
-    .task-status {
-      margin-top: 20px;
-      margin-bottom: 15px;
+    #adminContent {
+      display: none;
     }
 
-    #adminContent {
+    #completedTasks {
       display: none;
     }
   </style>
@@ -203,10 +219,25 @@
     <h1>Skabsregistrering – Admin</h1>
 
 
-    <h2>📋 Opgaver</h2>
+    <h2>📋 Åbne opgaver</h2>
 
     <div id="tasks">
       Henter opgaver...
+    </div>
+
+
+    <div class="completed-section">
+
+      <button
+        class="history-button"
+        id="completedToggleButton"
+        onclick="toggleCompletedTasks()"
+      >
+        📁 Vis afsluttede opgaver
+      </button>
+
+      <div id="completedTasks"></div>
+
     </div>
 
 
@@ -236,6 +267,12 @@ let accessToken = "";
 let currentUser = null;
 let employeeMap = {};
 
+let completedTasksVisible = false;
+
+
+/* =========================
+   HJÆLPEFUNKTIONER
+========================= */
 
 function escapeHtml(value) {
 
@@ -251,6 +288,20 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
+
+function formatDate(date) {
+
+  if (!date) {
+    return "-";
+  }
+
+  return new Date(date).toLocaleString("da-DK");
+}
+
+
+/* =========================
+   LOGIN
+========================= */
 
 async function login() {
 
@@ -287,18 +338,31 @@ async function login() {
     const data = await response.json();
 
     if (!response.ok) {
+
       throw new Error(
         data.error_description ||
         data.msg ||
         "Login mislykkedes."
       );
+
     }
 
     accessToken = data.access_token;
     currentUser = data.user;
 
-    document.getElementById("loginBox").style.display = "none";
-    document.getElementById("adminContent").style.display = "block";
+
+    localStorage.setItem(
+      "admin_access_token",
+      accessToken
+    );
+
+    localStorage.setItem(
+      "admin_user",
+      JSON.stringify(currentUser)
+    );
+
+
+    showAdmin();
 
     await loadAdmin();
 
@@ -306,73 +370,118 @@ async function login() {
 
     status.className = "error";
     status.textContent = error.message;
+
   }
+
 }
 
+
+/* =========================
+   VIS ADMIN
+========================= */
+
+function showAdmin() {
+
+  document.getElementById(
+    "loginBox"
+  ).style.display = "none";
+
+  document.getElementById(
+    "adminContent"
+  ).style.display = "block";
+
+}
+
+
+/* =========================
+   HENT ALT
+========================= */
 
 async function loadAdmin() {
 
   const status =
     document.getElementById("status");
 
-  status.textContent = "Henter data...";
+  status.textContent =
+    "Henter data...";
+
 
   try {
 
     await loadTasks();
 
 
-    const employeesResponse = await fetch(
-      `${SUPABASE_URL}/rest/v1/employees?select=id,employee_id,name,email`,
-      {
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${accessToken}`
+    const employeesResponse =
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/employees?select=id,employee_id,name,email`,
+        {
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${accessToken}`
+          }
         }
-      }
-    );
+      );
+
 
     if (!employeesResponse.ok) {
-      throw new Error("Kunne ikke hente medarbejdere.");
+
+      throw new Error(
+        "Kunne ikke hente medarbejdere."
+      );
+
     }
+
 
     const employees =
       await employeesResponse.json();
 
     employeeMap = {};
 
+
     employees.forEach(employee => {
-      employeeMap[employee.id] = employee;
+
+      employeeMap[employee.id] =
+        employee;
+
     });
 
 
-    const historyResponse = await fetch(
-      `${SUPABASE_URL}/rest/v1/locker_history?select=id,locker_number,floor,employee_id,employee_name,assigned_at,released_at,released_by&order=assigned_at.desc`,
-      {
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${accessToken}`
+    const historyResponse =
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/locker_history?select=id,locker_number,floor,employee_id,employee_name,assigned_at,released_at,released_by&order=assigned_at.desc`,
+        {
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${accessToken}`
+          }
         }
-      }
-    );
+      );
+
 
     if (!historyResponse.ok) {
-      throw new Error("Kunne ikke hente historik.");
+
+      throw new Error(
+        "Kunne ikke hente historik."
+      );
+
     }
+
 
     const history =
       await historyResponse.json();
 
 
-    const lockersResponse = await fetch(
-      `${SUPABASE_URL}/rest/v1/lockers?select=id,locker_number,floor,status,employee_id,assigned_at,locker_code&order=locker_number`,
-      {
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${accessToken}`
+    const lockersResponse =
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/lockers?select=id,locker_number,floor,status,employee_id,assigned_at,locker_code&order=locker_number`,
+        {
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${accessToken}`
+          }
         }
-      }
-    );
+      );
+
 
     if (!lockersResponse.ok) {
 
@@ -382,46 +491,69 @@ async function loadAdmin() {
       throw new Error(
         `Kunne ikke hente skabe. Fejl ${lockersResponse.status}: ${errorText}`
       );
+
     }
+
 
     const lockers =
       await lockersResponse.json();
 
 
-    renderLockers(lockers, history);
+    renderLockers(
+      lockers,
+      history
+    );
 
-    status.className = "success";
+
+    status.className =
+      "success";
+
     status.textContent =
       `${lockers.length} skabe indlæst.`;
 
+
   } catch (error) {
 
-    status.className = "error";
-    status.textContent = error.message;
+    status.className =
+      "error";
+
+    status.textContent =
+      error.message;
+
   }
+
 }
 
 
+/* =========================
+   OPGAVER
+========================= */
+
 async function loadTasks() {
 
-  const container =
+  const openContainer =
     document.getElementById("tasks");
 
-  container.innerHTML =
+  const completedContainer =
+    document.getElementById("completedTasks");
+
+
+  openContainer.innerHTML =
     "Henter opgaver...";
 
 
   try {
 
-    const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/locker_requests?select=id,locker_number,employee_name,employee_email,request_type,message,status,created_at,completed_at&order=created_at.desc`,
-      {
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${accessToken}`
+    const response =
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/locker_requests?select=id,locker_number,employee_name,employee_email,request_type,message,status,created_at,completed_at,completed_by&order=created_at.desc`,
+        {
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${accessToken}`
+          }
         }
-      }
-    );
+      );
 
 
     if (!response.ok) {
@@ -432,6 +564,7 @@ async function loadTasks() {
       throw new Error(
         `Kunne ikke hente opgaver. Fejl ${response.status}: ${errorText}`
       );
+
     }
 
 
@@ -439,115 +572,250 @@ async function loadTasks() {
       await response.json();
 
 
-    if (tasks.length === 0) {
+    const openTasks =
+      tasks.filter(task =>
+        task.status !== "completed"
+      );
 
-      container.innerHTML =
-        "<p>Ingen opgaver.</p>";
 
-      return;
+    const completedTasks =
+      tasks.filter(task =>
+        task.status === "completed"
+      );
+
+
+    /* ÅBNE OPGAVER */
+
+    if (openTasks.length === 0) {
+
+      openContainer.innerHTML =
+        "<p>✅ Ingen åbne opgaver.</p>";
+
+    } else {
+
+      openContainer.innerHTML = "";
+
+      openTasks.forEach(task => {
+
+        openContainer.appendChild(
+          createTaskElement(
+            task,
+            false
+          )
+        );
+
+      });
+
     }
 
 
-    container.innerHTML = "";
+    /* AFSLUTTEDE OPGAVER */
+
+    completedContainer.innerHTML = "";
 
 
-    tasks.forEach(task => {
+    if (completedTasks.length === 0) {
 
-      const div =
-        document.createElement("div");
+      completedContainer.innerHTML =
+        "<p>Ingen afsluttede opgaver.</p>";
 
+    } else {
 
-      div.className =
-        "task " +
-        (
-          task.status === "completed"
-            ? "completed"
-            : ""
+      completedTasks.forEach(task => {
+
+        completedContainer.appendChild(
+          createTaskElement(
+            task,
+            true
+          )
         );
 
+      });
 
-      const statusText =
-        task.status === "completed"
-          ? "Færdig"
-          : "Åben";
+    }
 
 
-      const statusClass =
-        task.status === "completed"
-          ? "task-status-completed"
-          : "task-status-open";
-
-
-      let html = `
-
-        <div class="task-title">
-          Skab ${escapeHtml(task.locker_number)}
-        </div>
-
-        <strong>Medarbejder:</strong>
-        ${escapeHtml(task.employee_name || "Ukendt")}<br>
-
-        <strong>Norlys-mail:</strong>
-        ${escapeHtml(task.employee_email || "Ukendt")}<br>
-
-        <strong>Type:</strong>
-        ${escapeHtml(task.request_type || "-")}<br>
-
-        <strong>Beskrivelse:</strong>
-        ${escapeHtml(task.message || "Ingen beskrivelse")}<br>
-
-        <div class="task-status">
-          <strong>Status:</strong>
-          <span class="${statusClass}">
-            ${statusText}
-          </span>
-        </div>
-      `;
-
-
-      if (task.status !== "completed") {
-
-        html += `
-
-          <button
-            class="complete-button"
-            onclick="completeTask('${task.id}')"
-          >
-            ✅ Færdig
-          </button>
-
-        `;
-
-      } else {
-
-        html += `
-          <strong>Færdiggjort:</strong>
-          ${formatDate(task.completed_at)}
-        `;
-
-      }
-
-
-      div.innerHTML =
-        html;
-
-
-      container.appendChild(div);
-
-    });
+    completedContainer.style.display =
+      completedTasksVisible
+        ? "block"
+        : "none";
 
 
   } catch (error) {
 
-    container.innerHTML =
-      `<div class="error">${escapeHtml(error.message)}</div>`;
+    openContainer.innerHTML =
+      `<div class="error">
+        ${escapeHtml(error.message)}
+      </div>`;
 
   }
 
 }
 
 
-async function completeTask(taskId) {
+/* =========================
+   OPRET OPGAVE VISNING
+========================= */
+
+function createTaskElement(
+  task,
+  completed
+) {
+
+  const div =
+    document.createElement("div");
+
+
+  div.className =
+    completed
+      ? "task completed-task"
+      : "task";
+
+
+  const statusText =
+    completed
+      ? "Færdig"
+      : "Åben";
+
+
+  const statusClass =
+    completed
+      ? "task-status-completed"
+      : "task-status-open";
+
+
+  let html = `
+
+    <div class="task-title">
+      Skab ${escapeHtml(
+        task.locker_number
+      )}
+    </div>
+
+    <strong>Medarbejder:</strong>
+    ${escapeHtml(
+      task.employee_name ||
+      "Ukendt"
+    )}
+    <br>
+
+    <strong>Norlys-mail:</strong>
+    ${escapeHtml(
+      task.employee_email ||
+      "Ukendt"
+    )}
+    <br>
+
+    <strong>Type:</strong>
+    ${escapeHtml(
+      task.request_type ||
+      "-"
+    )}
+    <br>
+
+    <strong>Beskrivelse:</strong>
+    ${escapeHtml(
+      task.message ||
+      "Ingen beskrivelse"
+    )}
+    <br>
+
+    <strong>Oprettet:</strong>
+    ${formatDate(
+      task.created_at
+    )}
+
+    <div class="task-status">
+
+      <strong>Status:</strong>
+
+      <span class="${statusClass}">
+        ${statusText}
+      </span>
+
+    </div>
+
+  `;
+
+
+  if (!completed) {
+
+    html += `
+
+      <button
+        class="complete-button"
+        onclick="completeTask('${task.id}')"
+      >
+        ✅ Færdig
+      </button>
+
+    `;
+
+  } else {
+
+    html += `
+
+      <strong>Færdiggjort:</strong>
+      ${formatDate(
+        task.completed_at
+      )}
+
+    `;
+
+  }
+
+
+  div.innerHTML =
+    html;
+
+
+  return div;
+
+}
+
+
+/* =========================
+   VIS / SKJUL AFSLUTTEDE
+========================= */
+
+function toggleCompletedTasks() {
+
+  const container =
+    document.getElementById(
+      "completedTasks"
+    );
+
+  const button =
+    document.getElementById(
+      "completedToggleButton"
+    );
+
+
+  completedTasksVisible =
+    !completedTasksVisible;
+
+
+  container.style.display =
+    completedTasksVisible
+      ? "block"
+      : "none";
+
+
+  button.textContent =
+    completedTasksVisible
+      ? "📁 Skjul afsluttede opgaver"
+      : "📁 Vis afsluttede opgaver";
+
+}
+
+
+/* =========================
+   FÆRDIGGØR OPGAVE
+========================= */
+
+async function completeTask(
+  taskId
+) {
 
   if (!confirm(
     "Er opgaven færdigbehandlet?"
@@ -565,10 +833,19 @@ async function completeTask(taskId) {
           method: "PATCH",
 
           headers: {
-            "apikey": SUPABASE_KEY,
-            "Authorization": `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-            "Prefer": "return=minimal"
+
+            "apikey":
+              SUPABASE_KEY,
+
+            "Authorization":
+              `Bearer ${accessToken}`,
+
+            "Content-Type":
+              "application/json",
+
+            "Prefer":
+              "return=minimal"
+
           },
 
           body: JSON.stringify({
@@ -583,6 +860,7 @@ async function completeTask(taskId) {
               currentUser.id
 
           })
+
         }
       );
 
@@ -604,40 +882,47 @@ async function completeTask(taskId) {
 
   } catch (error) {
 
-    alert(error.message);
+    alert(
+      error.message
+    );
 
   }
 
 }
 
 
-function formatDate(date) {
+/* =========================
+   VIS SKABE
+========================= */
 
-  if (!date) {
-    return "-";
-  }
-
-  return new Date(date).toLocaleString("da-DK");
-}
-
-
-function renderLockers(lockers, history) {
+function renderLockers(
+  lockers,
+  history
+) {
 
   const container =
-    document.getElementById("lockers");
+    document.getElementById(
+      "lockers"
+    );
 
   container.innerHTML = "";
 
 
   const floors = {
+
     0: "Stuen",
     1: "Etage 1",
     2: "Etage 2",
     3: "Etage 3"
+
   };
 
 
-  for (let floor = 0; floor <= 3; floor++) {
+  for (
+    let floor = 0;
+    floor <= 3;
+    floor++
+  ) {
 
     const floorLockers =
       lockers.filter(locker =>
@@ -645,133 +930,218 @@ function renderLockers(lockers, history) {
       );
 
 
-    if (floorLockers.length === 0) {
+    if (
+      floorLockers.length === 0
+    ) {
       continue;
     }
 
 
     const floorDiv =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
 
-    floorDiv.className = "floor";
+    floorDiv.className =
+      "floor";
 
 
     const title =
-      document.createElement("h2");
+      document.createElement(
+        "h2"
+      );
 
     title.textContent =
       floors[floor];
 
-    floorDiv.appendChild(title);
+    floorDiv.appendChild(
+      title
+    );
 
 
-    floorLockers.forEach(locker => {
+    floorLockers.forEach(
+      locker => {
 
-      const employee =
-        locker.employee_id
-          ? employeeMap[locker.employee_id]
-          : null;
-
-
-      const lockerHistory =
-        history.filter(item =>
-          item.locker_number === locker.locker_number
-        );
+        const employee =
+          locker.employee_id
+            ? employeeMap[
+                locker.employee_id
+              ]
+            : null;
 
 
-      const lockerDiv =
-        document.createElement("div");
+        const lockerHistory =
+          history.filter(item =>
+            item.locker_number ===
+            locker.locker_number
+          );
 
 
-      lockerDiv.className =
-        "locker " +
-        (
-          locker.status === "occupied"
-            ? "occupied"
-            : "available"
-        );
+        const lockerDiv =
+          document.createElement(
+            "div"
+          );
 
 
-      let html = `
-        <strong>Skab ${escapeHtml(locker.locker_number)}</strong><br><br>
-      `;
+        lockerDiv.className =
+          "locker " +
+          (
+            locker.status ===
+            "occupied"
+              ? "occupied"
+              : "available"
+          );
 
 
-      if (locker.status === "occupied") {
+        let html = `
 
-        html += `
-          <strong>Status:</strong> Optaget<br>
-          <strong>Navn:</strong>
-          ${escapeHtml(employee?.name || "Ukendt")}<br>
-          <strong>E-mail:</strong>
-          ${escapeHtml(employee?.email || "Ukendt")}<br>
-          <strong>4-cifret kode:</strong>
-          ${escapeHtml(locker.locker_code || "Ingen kode")}<br>
-          <strong>Registreret:</strong>
-          ${formatDate(locker.assigned_at)}<br>
+          <strong>
+            Skab ${escapeHtml(
+              locker.locker_number
+            )}
+          </strong>
 
-          <button
-            class="release-button"
-            onclick="releaseLocker(
-              '${locker.id}',
-              '${locker.locker_number}',
-              '${locker.employee_id}'
-            )"
-          >
-            Frigiv skab
-          </button>
-        `;
+          <br><br>
 
-      } else {
-
-        html += `
-          <strong>Status:</strong> Ledigt
-        `;
-      }
-
-
-      if (lockerHistory.length > 0) {
-
-        html += `
-          <details class="history">
-            <summary>
-              ▶ Vis historik (${lockerHistory.length})
-            </summary>
         `;
 
 
-        lockerHistory.forEach(item => {
+        if (
+          locker.status ===
+          "occupied"
+        ) {
 
-          const releasedText =
-            item.released_at
-              ? `Frigivet: ${formatDate(item.released_at)}`
-              : "Ikke frigivet";
+          html += `
+
+            <strong>Status:</strong>
+            Optaget
+            <br>
+
+            <strong>Navn:</strong>
+            ${escapeHtml(
+              employee?.name ||
+              "Ukendt"
+            )}
+            <br>
+
+            <strong>E-mail:</strong>
+            ${escapeHtml(
+              employee?.email ||
+              "Ukendt"
+            )}
+            <br>
+
+            <strong>4-cifret kode:</strong>
+            ${escapeHtml(
+              locker.locker_code ||
+              "Ingen kode"
+            )}
+            <br>
+
+            <strong>Registreret:</strong>
+            ${formatDate(
+              locker.assigned_at
+            )}
+            <br>
+
+            <button
+              class="release-button"
+              onclick="releaseLocker(
+                '${locker.id}',
+                '${locker.locker_number}',
+                '${locker.employee_id}'
+              )"
+            >
+              Frigiv skab
+            </button>
+
+          `;
+
+        } else {
+
+          html += `
+
+            <strong>Status:</strong>
+            Ledigt
+
+          `;
+
+        }
+
+
+        if (
+          lockerHistory.length > 0
+        ) {
+
+          html += `
+
+            <details class="history">
+
+              <summary>
+                ▶ Vis historik
+                (${lockerHistory.length})
+              </summary>
+
+          `;
+
+
+          lockerHistory.forEach(
+            item => {
+
+              const releasedText =
+                item.released_at
+                  ? `Frigivet:
+                     ${formatDate(
+                       item.released_at
+                     )}`
+                  : "Ikke frigivet";
+
+
+              html += `
+
+                <div class="history-item">
+
+                  <strong>
+                    ${escapeHtml(
+                      item.employee_name
+                    )}
+                  </strong>
+
+                  <br>
+
+                  Registreret:
+                  ${formatDate(
+                    item.assigned_at
+                  )}
+
+                  <br>
+
+                  ${releasedText}
+
+                </div>
+
+              `;
+
+            }
+          );
 
 
           html += `
-            <div class="history-item">
-              <strong>${escapeHtml(item.employee_name)}</strong><br>
-              Registreret: ${formatDate(item.assigned_at)}<br>
-              ${releasedText}
-            </div>
+            </details>
           `;
-        });
+
+        }
 
 
-        html += `
-          </details>
-        `;
+        lockerDiv.innerHTML =
+          html;
+
+        floorDiv.appendChild(
+          lockerDiv
+        );
+
       }
-
-
-      lockerDiv.innerHTML =
-        html;
-
-      floorDiv.appendChild(
-        lockerDiv
-      );
-
-    });
+    );
 
 
     container.appendChild(
@@ -782,6 +1152,10 @@ function renderLockers(lockers, history) {
 
 }
 
+
+/* =========================
+   FRIGIV SKAB
+========================= */
 
 async function releaseLocker(
   lockerId,
@@ -805,10 +1179,19 @@ async function releaseLocker(
           method: "PATCH",
 
           headers: {
-            "apikey": SUPABASE_KEY,
-            "Authorization": `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-            "Prefer": "return=minimal"
+
+            "apikey":
+              SUPABASE_KEY,
+
+            "Authorization":
+              `Bearer ${accessToken}`,
+
+            "Content-Type":
+              "application/json",
+
+            "Prefer":
+              "return=minimal"
+
           },
 
           body: JSON.stringify({
@@ -820,11 +1203,14 @@ async function releaseLocker(
               currentUser.id
 
           })
+
         }
       );
 
 
-    if (!historyResponse.ok) {
+    if (
+      !historyResponse.ok
+    ) {
 
       const errorText =
         await historyResponse.text();
@@ -833,6 +1219,7 @@ async function releaseLocker(
         "Kunne ikke opdatere historikken: " +
         errorText
       );
+
     }
 
 
@@ -843,10 +1230,19 @@ async function releaseLocker(
           method: "PATCH",
 
           headers: {
-            "apikey": SUPABASE_KEY,
-            "Authorization": `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-            "Prefer": "return=minimal"
+
+            "apikey":
+              SUPABASE_KEY,
+
+            "Authorization":
+              `Bearer ${accessToken}`,
+
+            "Content-Type":
+              "application/json",
+
+            "Prefer":
+              "return=minimal"
+
           },
 
           body: JSON.stringify({
@@ -861,11 +1257,14 @@ async function releaseLocker(
               null
 
           })
+
         }
       );
 
 
-    if (!lockerResponse.ok) {
+    if (
+      !lockerResponse.ok
+    ) {
 
       const errorText =
         await lockerResponse.text();
@@ -874,6 +1273,7 @@ async function releaseLocker(
         "Kunne ikke frigive skabet: " +
         errorText
       );
+
     }
 
 
@@ -882,12 +1282,18 @@ async function releaseLocker(
 
   } catch (error) {
 
-    alert(error.message);
+    alert(
+      error.message
+    );
 
   }
 
 }
 
+
+/* =========================
+   LOG UD
+========================= */
 
 async function logout() {
 
@@ -899,9 +1305,15 @@ async function logout() {
         method: "POST",
 
         headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${accessToken}`
+
+          "apikey":
+            SUPABASE_KEY,
+
+          "Authorization":
+            `Bearer ${accessToken}`
+
         }
+
       }
     );
 
@@ -909,29 +1321,100 @@ async function logout() {
   }
 
 
+  localStorage.removeItem(
+    "admin_access_token"
+  );
+
+  localStorage.removeItem(
+    "admin_user"
+  );
+
+
   accessToken = "";
   currentUser = null;
 
 
-  document
-    .getElementById("adminContent")
-    .style.display = "none";
+  document.getElementById(
+    "adminContent"
+  ).style.display = "none";
 
 
-  document
-    .getElementById("loginBox")
-    .style.display = "block";
+  document.getElementById(
+    "loginBox"
+  ).style.display = "block";
 
 
-  document
-    .getElementById("loginStatus")
-    .textContent = "";
+  document.getElementById(
+    "loginStatus"
+  ).textContent = "";
 
 }
 
 
+/* =========================
+   START
+========================= */
+
+async function startAdmin() {
+
+  const savedToken =
+    localStorage.getItem(
+      "admin_access_token"
+    );
+
+  const savedUser =
+    localStorage.getItem(
+      "admin_user"
+    );
+
+
+  if (
+    savedToken &&
+    savedUser
+  ) {
+
+    try {
+
+      accessToken =
+        savedToken;
+
+      currentUser =
+        JSON.parse(
+          savedUser
+        );
+
+
+      showAdmin();
+
+      await loadAdmin();
+
+      return;
+
+    } catch (error) {
+
+      localStorage.removeItem(
+        "admin_access_token"
+      );
+
+      localStorage.removeItem(
+        "admin_user"
+      );
+
+    }
+
+  }
+
+}
+
+
+/* =========================
+   KNAPPER
+========================= */
+
 document
-  .getElementById("loginButton")
+  .getElementById(
+    "loginButton"
+  )
   .addEventListener(
     "click",
     login
@@ -939,11 +1422,16 @@ document
 
 
 document
-  .getElementById("logoutButton")
+  .getElementById(
+    "logoutButton"
+  )
   .addEventListener(
     "click",
     logout
   );
+
+
+startAdmin();
 
 </script>
 
