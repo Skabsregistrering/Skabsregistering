@@ -42,13 +42,20 @@
       font-weight: bold;
     }
 
-    input {
+    input,
+    textarea {
       width: 100%;
       box-sizing: border-box;
       padding: 13px;
       font-size: 17px;
       border: 1px solid #ccc;
       border-radius: 6px;
+      font-family: Arial, sans-serif;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
     }
 
     button {
@@ -69,7 +76,24 @@
       cursor: not-allowed;
     }
 
-    #status {
+    .problem-button {
+      background: #f59e0b;
+    }
+
+    .send-button {
+      background: #2563eb;
+    }
+
+    .cancel-button {
+      background: #777;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    #status,
+    #problemStatus {
       text-align: center;
       margin-top: 20px;
       font-size: 16px;
@@ -87,39 +111,90 @@
     Indlæser...
   </div>
 
-  <label for="email">Norlys-e-mail</label>
-  <input
-    type="email"
-    id="email"
-    placeholder="navn@norlys.dk"
-    autocomplete="email"
-  >
+  <div id="registrationForm">
 
-  <label for="name">Fulde navn</label>
-  <input
-    type="text"
-    id="name"
-    placeholder="Fornavn Efternavn"
-    autocomplete="name"
-  >
+    <label for="email">Norlys-e-mail</label>
 
-  <label for="lockerCode">4-cifret kode til skabet</label>
-  <input
-    type="password"
-    id="lockerCode"
-    placeholder="••••"
-    inputmode="numeric"
-    maxlength="4"
-    autocomplete="off"
-  >
+    <input
+      type="email"
+      id="email"
+      placeholder="navn@norlys.dk"
+      autocomplete="email"
+    >
 
-  <button id="registerButton" onclick="registerLocker()">
-    Registrer skab
-  </button>
+    <label for="name">Fulde navn</label>
+
+    <input
+      type="text"
+      id="name"
+      placeholder="Fornavn Efternavn"
+      autocomplete="name"
+    >
+
+    <label for="lockerCode">4-cifret kode til skabet</label>
+
+    <input
+      type="password"
+      id="lockerCode"
+      placeholder="••••"
+      inputmode="numeric"
+      maxlength="4"
+      autocomplete="off"
+    >
+
+    <button id="registerButton" onclick="registerLocker()">
+      Registrer skab
+    </button>
+
+  </div>
 
   <div id="status"></div>
 
+
+  <div id="problemSection" class="hidden">
+
+    <button
+      class="problem-button"
+      onclick="showProblemForm()"
+    >
+      🔧 Fejlmeld mit skab
+    </button>
+
+  </div>
+
+
+  <div id="problemForm" class="hidden">
+
+    <label for="problemMessage">
+      Hvad er problemet med skabet?
+    </label>
+
+    <textarea
+      id="problemMessage"
+      placeholder="Beskriv problemet..."
+    ></textarea>
+
+    <button
+      class="send-button"
+      id="sendProblemButton"
+      onclick="sendProblemReport()"
+    >
+      Send fejlmelding
+    </button>
+
+    <button
+      class="cancel-button"
+      onclick="hideProblemForm()"
+    >
+      Annuller
+    </button>
+
+    <div id="problemStatus"></div>
+
+  </div>
+
 </div>
+
 
 <script>
 
@@ -129,8 +204,17 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
   "sb_publishable_XU7y4WVGX4Osj7ixgRIfDA_mHpJ1ttv";
 
-const params = new URLSearchParams(window.location.search);
-const lockerNumber = params.get("locker");
+
+const params =
+  new URLSearchParams(window.location.search);
+
+const lockerNumber =
+  params.get("locker");
+
+
+let registeredEmail = "";
+let registeredName = "";
+
 
 document.getElementById("locker").textContent =
   lockerNumber
@@ -138,9 +222,16 @@ document.getElementById("locker").textContent =
     : "Intet skab valgt";
 
 
-document.getElementById("lockerCode").addEventListener("input", function() {
-  this.value = this.value.replace(/\D/g, "").slice(0, 4);
-});
+document
+  .getElementById("lockerCode")
+  .addEventListener("input", function() {
+
+    this.value =
+      this.value
+        .replace(/\D/g, "")
+        .slice(0, 4);
+
+  });
 
 
 async function registerLocker() {
@@ -162,29 +253,40 @@ async function registerLocker() {
 
 
   if (!lockerNumber) {
+
     status.innerHTML =
       "<strong>Fejl:</strong> Intet skab valgt.";
+
     return;
   }
 
 
-  if (!email || !email.toLowerCase().endsWith("@norlys.dk")) {
+  if (
+    !email ||
+    !email.toLowerCase().endsWith("@norlys.dk")
+  ) {
+
     status.innerHTML =
       "<strong>Brug din Norlys-e-mail.</strong>";
+
     return;
   }
 
 
   if (!name) {
+
     status.innerHTML =
       "<strong>Indtast dit fulde navn.</strong>";
+
     return;
   }
 
 
   if (!/^\d{4}$/.test(lockerCode)) {
+
     status.innerHTML =
       "<strong>Koden skal være præcis 4 cifre.</strong>";
+
     return;
   }
 
@@ -208,36 +310,46 @@ async function registerLocker() {
 
 
     if (!lockerResponse.ok) {
+
       throw new Error(
         "Kunne ikke hente skabet."
       );
+
     }
 
 
-    const lockers = await lockerResponse.json();
+    const lockers =
+      await lockerResponse.json();
 
 
     if (lockers.length === 0) {
+
       throw new Error(
         "Skabet findes ikke."
       );
+
     }
 
 
-    const locker = lockers[0];
+    const locker =
+      lockers[0];
 
 
     if (locker.defect === true) {
+
       throw new Error(
         "Dette skab er markeret som defekt."
       );
+
     }
 
 
     if (locker.status !== "available") {
+
       throw new Error(
         "Dette skab er allerede optaget."
       );
+
     }
 
 
@@ -253,33 +365,58 @@ async function registerLocker() {
         },
 
         body: JSON.stringify({
-          p_qr_token: locker.qr_token,
-          p_employee_id: email,
-          p_name: name,
-          p_locker_code: lockerCode
+
+          p_qr_token:
+            locker.qr_token,
+
+          p_employee_id:
+            email,
+
+          p_name:
+            name,
+
+          p_locker_code:
+            lockerCode
+
         })
       }
     );
 
 
-    const resultText = await response.text();
+    const resultText =
+      await response.text();
 
 
     if (!response.ok) {
+
       throw new Error(
         `Fejl ${response.status}: ${resultText}`
       );
+
     }
+
+
+    registeredEmail = email;
+    registeredName = name;
+
+
+    document
+      .getElementById("registrationForm")
+      .classList.add("hidden");
 
 
     status.innerHTML =
       "<strong>Skabet er registreret.</strong><br><br>" +
-      "Skab " + lockerNumber +
-      " er nu registreret til " + name + ".";
+      "Skab " +
+      lockerNumber +
+      " er nu registreret til " +
+      name +
+      ".";
 
 
-    button.textContent = "Registreret";
-    button.disabled = true;
+    document
+      .getElementById("problemSection")
+      .classList.remove("hidden");
 
 
   } catch (error) {
@@ -290,8 +427,147 @@ async function registerLocker() {
 
 
     button.disabled = false;
-    button.textContent = "Registrer skab";
+    button.textContent =
+      "Registrer skab";
+
   }
+
+}
+
+
+function showProblemForm() {
+
+  document
+    .getElementById("problemSection")
+    .classList.add("hidden");
+
+  document
+    .getElementById("problemForm")
+    .classList.remove("hidden");
+
+}
+
+
+function hideProblemForm() {
+
+  document
+    .getElementById("problemForm")
+    .classList.add("hidden");
+
+  document
+    .getElementById("problemSection")
+    .classList.remove("hidden");
+
+}
+
+
+async function sendProblemReport() {
+
+  const message =
+    document
+      .getElementById("problemMessage")
+      .value
+      .trim();
+
+  const status =
+    document.getElementById("problemStatus");
+
+  const button =
+    document.getElementById("sendProblemButton");
+
+
+  if (!message) {
+
+    status.innerHTML =
+      "<strong>Beskriv venligst problemet.</strong>";
+
+    return;
+  }
+
+
+  button.disabled = true;
+  button.textContent =
+    "Sender...";
+
+  status.textContent = "";
+
+
+  try {
+
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/locker_requests`,
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${SUPABASE_KEY}`,
+          "Prefer": "return=minimal"
+        },
+
+        body: JSON.stringify({
+
+          locker_number:
+            lockerNumber,
+
+          employee_name:
+            registeredName,
+
+          employee_email:
+            registeredEmail,
+
+          request_type:
+            "Fejlmelding",
+
+          message:
+            message,
+
+          status:
+            "open"
+
+        })
+      }
+    );
+
+
+    if (!response.ok) {
+
+      const errorText =
+        await response.text();
+
+      throw new Error(
+        `Fejl ${response.status}: ${errorText}`
+      );
+
+    }
+
+
+    status.innerHTML =
+      "<strong>Fejlmeldingen er sendt.</strong><br><br>" +
+      "Admin kan nu se problemet og behandle det.";
+
+
+    button.textContent =
+      "Sendt";
+
+    document
+      .getElementById("problemMessage")
+      .disabled = true;
+
+
+  } catch (error) {
+
+    status.innerHTML =
+      "<strong>Der opstod en fejl.</strong><br><br>" +
+      error.message;
+
+    button.disabled = false;
+    button.textContent =
+      "Send fejlmelding";
+
+  }
+
 }
 
 </script>
