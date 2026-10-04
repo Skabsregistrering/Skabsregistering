@@ -103,6 +103,16 @@
     autocomplete="name"
   >
 
+  <label for="lockerCode">4-cifret kode til skabet</label>
+  <input
+    type="password"
+    id="lockerCode"
+    placeholder="••••"
+    inputmode="numeric"
+    maxlength="4"
+    autocomplete="off"
+  >
+
   <button id="registerButton" onclick="registerLocker()">
     Registrer skab
   </button>
@@ -127,6 +137,12 @@ document.getElementById("locker").textContent =
     ? "Skab " + lockerNumber
     : "Intet skab valgt";
 
+
+document.getElementById("lockerCode").addEventListener("input", function() {
+  this.value = this.value.replace(/\D/g, "").slice(0, 4);
+});
+
+
 async function registerLocker() {
 
   const email =
@@ -135,11 +151,15 @@ async function registerLocker() {
   const name =
     document.getElementById("name").value.trim();
 
+  const lockerCode =
+    document.getElementById("lockerCode").value.trim();
+
   const status =
     document.getElementById("status");
 
   const button =
     document.getElementById("registerButton");
+
 
   if (!lockerNumber) {
     status.innerHTML =
@@ -147,11 +167,13 @@ async function registerLocker() {
     return;
   }
 
+
   if (!email || !email.toLowerCase().endsWith("@norlys.dk")) {
     status.innerHTML =
       "<strong>Brug din Norlys-e-mail.</strong>";
     return;
   }
+
 
   if (!name) {
     status.innerHTML =
@@ -159,14 +181,23 @@ async function registerLocker() {
     return;
   }
 
+
+  if (!/^\d{4}$/.test(lockerCode)) {
+    status.innerHTML =
+      "<strong>Koden skal være præcis 4 cifre.</strong>";
+    return;
+  }
+
+
   button.disabled = true;
   button.textContent = "Registrerer...";
   status.textContent = "";
 
+
   try {
 
     const lockerResponse = await fetch(
-      `${SUPABASE_URL}/rest/v1/lockers?locker_number=eq.${encodeURIComponent(lockerNumber)}&select=qr_token,status`,
+      `${SUPABASE_URL}/rest/v1/lockers?locker_number=eq.${encodeURIComponent(lockerNumber)}&select=qr_token,status,defect`,
       {
         headers: {
           "apikey": SUPABASE_KEY,
@@ -175,13 +206,16 @@ async function registerLocker() {
       }
     );
 
+
     if (!lockerResponse.ok) {
       throw new Error(
         "Kunne ikke hente skabet."
       );
     }
 
+
     const lockers = await lockerResponse.json();
+
 
     if (lockers.length === 0) {
       throw new Error(
@@ -189,13 +223,23 @@ async function registerLocker() {
       );
     }
 
+
     const locker = lockers[0];
+
+
+    if (locker.defect === true) {
+      throw new Error(
+        "Dette skab er markeret som defekt."
+      );
+    }
+
 
     if (locker.status !== "available") {
       throw new Error(
         "Dette skab er allerede optaget."
       );
     }
+
 
     const response = await fetch(
       `${SUPABASE_URL}/rest/v1/rpc/claim_locker`,
@@ -211,12 +255,15 @@ async function registerLocker() {
         body: JSON.stringify({
           p_qr_token: locker.qr_token,
           p_employee_id: email,
-          p_name: name
+          p_name: name,
+          p_locker_code: lockerCode
         })
       }
     );
 
+
     const resultText = await response.text();
+
 
     if (!response.ok) {
       throw new Error(
@@ -224,19 +271,23 @@ async function registerLocker() {
       );
     }
 
+
     status.innerHTML =
       "<strong>Skabet er registreret.</strong><br><br>" +
       "Skab " + lockerNumber +
       " er nu registreret til " + name + ".";
 
+
     button.textContent = "Registreret";
     button.disabled = true;
+
 
   } catch (error) {
 
     status.innerHTML =
       "<strong>Der opstod en fejl.</strong><br><br>" +
       error.message;
+
 
     button.disabled = false;
     button.textContent = "Registrer skab";
