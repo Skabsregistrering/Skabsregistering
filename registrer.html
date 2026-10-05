@@ -11,7 +11,22 @@
       font-family: Arial, sans-serif;
       background: #f5f5f5;
       margin: 0;
-      padding: 30px 20px;
+      padding: 20px;
+    }
+
+    .language {
+      max-width: 500px;
+      margin: 0 auto 10px auto;
+      text-align: right;
+    }
+
+    .language button {
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: white;
+      cursor: pointer;
+      font-weight: bold;
     }
 
     .box {
@@ -33,6 +48,17 @@
       font-size: 26px;
       font-weight: bold;
       margin: 25px 0;
+    }
+
+    .guest-info {
+      display: none;
+      background: #dbeafe;
+      border: 1px solid #93c5fd;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      text-align: center;
+      font-weight: bold;
     }
 
     label {
@@ -58,7 +84,7 @@
       resize: vertical;
     }
 
-    button {
+    button.main-button {
       width: 100%;
       margin-top: 25px;
       padding: 14px;
@@ -72,20 +98,47 @@
     }
 
     button:disabled {
-      background: #999;
+      background: #999 !important;
       cursor: not-allowed;
     }
 
     .problem-button {
       background: #f59e0b;
+      color: white;
+      width: 100%;
+      margin-top: 25px;
+      padding: 14px;
+      font-size: 18px;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
     }
 
     .send-button {
       background: #2563eb;
+      color: white;
+      width: 100%;
+      margin-top: 25px;
+      padding: 14px;
+      font-size: 18px;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
     }
 
     .cancel-button {
       background: #777;
+      color: white;
+      width: 100%;
+      margin-top: 10px;
+      padding: 14px;
+      font-size: 18px;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
     }
 
     .hidden {
@@ -103,46 +156,130 @@
 
 <body>
 
+<div class="language">
+  <button onclick="setLanguage('da')">🇩🇰 Dansk</button>
+  <button onclick="setLanguage('en')">🇬🇧 English</button>
+</div>
+
 <div class="box">
 
-  <h1>Registrer skab</h1>
+  <h1 id="pageTitle">
+    Registrer skab
+  </h1>
 
   <div class="locker" id="locker">
     Indlæser...
   </div>
 
+  <div class="guest-info" id="guestInfo">
+    🔵 Gæsteskab<br>
+    <span id="guestInfoText">
+      Dette skab gælder kun for i dag.
+    </span>
+  </div>
+
   <div id="registrationForm">
 
-    <label for="email">Norlys-e-mail</label>
+    <!-- NORMAL EMPLOYEE -->
 
-    <input
-      type="email"
-      id="email"
-      placeholder="navn@norlys.dk"
-      autocomplete="email"
+    <div id="employeeFields">
+
+      <label for="email" id="emailLabel">
+        Norlys-e-mail
+      </label>
+
+      <input
+        type="email"
+        id="email"
+        placeholder="navn@norlys.dk"
+        autocomplete="email"
+      >
+
+    </div>
+
+
+    <!-- GUEST -->
+
+    <div id="guestFields" class="hidden">
+
+      <label for="guestName" id="guestNameLabel">
+        Gæstens navn
+      </label>
+
+      <input
+        type="text"
+        id="guestName"
+        placeholder="Fornavn Efternavn"
+        autocomplete="name"
+      >
+
+      <label for="guestCompany" id="guestCompanyLabel">
+        Virksomhed (valgfrit)
+      </label>
+
+      <input
+        type="text"
+        id="guestCompany"
+        placeholder="Virksomhed"
+      >
+
+      <label for="guestEmail" id="guestEmailLabel">
+        E-mail (valgfrit)
+      </label>
+
+      <input
+        type="email"
+        id="guestEmail"
+        placeholder="navn@eksempel.dk"
+        autocomplete="email"
+      >
+
+    </div>
+
+
+    <!-- NORMAL EMPLOYEE NAME -->
+
+    <div id="employeeNameField">
+
+      <label for="name" id="nameLabel">
+        Fulde navn
+      </label>
+
+      <input
+        type="text"
+        id="name"
+        placeholder="Fornavn Efternavn"
+        autocomplete="name"
+      >
+
+    </div>
+
+
+    <!-- LOCKER CODE FOR EMPLOYEES -->
+
+    <div id="lockerCodeField">
+
+      <label for="lockerCode" id="lockerCodeLabel">
+        4-cifret kode til skabet
+      </label>
+
+      <input
+        type="password"
+        id="lockerCode"
+        placeholder="••••"
+        inputmode="numeric"
+        maxlength="4"
+        autocomplete="off"
+      >
+
+    </div>
+
+
+    <button
+      class="main-button"
+      id="registerButton"
+      onclick="registerLocker()"
     >
-
-    <label for="name">Fulde navn</label>
-
-    <input
-      type="text"
-      id="name"
-      placeholder="Fornavn Efternavn"
-      autocomplete="name"
-    >
-
-    <label for="lockerCode">4-cifret kode til skabet</label>
-
-    <input
-      type="password"
-      id="lockerCode"
-      placeholder="••••"
-      inputmode="numeric"
-      maxlength="4"
-      autocomplete="off"
-    >
-
-    <button id="registerButton" onclick="registerLocker()">
       Registrer skab
     </button>
 
@@ -156,6 +293,7 @@
     <button
       class="problem-button"
       onclick="showProblemForm()"
+      id="problemButton"
     >
       🔧 Fejlmeld mit skab
     </button>
@@ -165,7 +303,10 @@
 
   <div id="problemForm" class="hidden">
 
-    <label for="problemMessage">
+    <label
+      for="problemMessage"
+      id="problemLabel"
+    >
       Hvad er problemet med skabet?
     </label>
 
@@ -185,6 +326,7 @@
     <button
       class="cancel-button"
       onclick="hideProblemForm()"
+      id="cancelButton"
     >
       Annuller
     </button>
@@ -205,45 +347,406 @@ const SUPABASE_KEY =
   "sb_publishable_XU7y4WVGX4Osj7ixgRIfDA_mHpJ1ttv";
 
 
+const GUEST_LOCKERS = [
+  "0.007",
+  "0.008",
+  "0.009"
+];
+
+
 const params =
   new URLSearchParams(window.location.search);
 
+
 const lockerNumber =
   params.get("locker");
+
+
+const isGuest =
+  GUEST_LOCKERS.includes(lockerNumber);
 
 
 let registeredEmail = "";
 let registeredName = "";
 
 
-document.getElementById("locker").textContent =
-  lockerNumber
-    ? "Skab " + lockerNumber
-    : "Intet skab valgt";
+let currentLanguage =
+  localStorage.getItem("lockerLanguage") || "da";
+
+
+const translations = {
+
+  da: {
+
+    title: "Registrer skab",
+
+    noLocker:
+      "Intet skab valgt",
+
+    locker:
+      "Skab",
+
+    guestInfo:
+      "Dette skab er et gæsteskab og gælder kun for i dag.",
+
+    email:
+      "Norlys-e-mail",
+
+    emailPlaceholder:
+      "navn@norlys.dk",
+
+    name:
+      "Fulde navn",
+
+    namePlaceholder:
+      "Fornavn Efternavn",
+
+    guestName:
+      "Gæstens navn",
+
+    guestCompany:
+      "Virksomhed (valgfrit)",
+
+    guestCompanyPlaceholder:
+      "Virksomhed",
+
+    guestEmail:
+      "E-mail (valgfrit)",
+
+    guestEmailPlaceholder:
+      "navn@eksempel.dk",
+
+    code:
+      "4-cifret kode til skabet",
+
+    register:
+      "Registrer skab",
+
+    registering:
+      "Registrerer...",
+
+    useNorlys:
+      "Brug din Norlys-e-mail.",
+
+    enterName:
+      "Indtast dit fulde navn.",
+
+    codeError:
+      "Koden skal være præcis 4 cifre.",
+
+    noLocker:
+      "Intet skab valgt.",
+
+    lockerNotFound:
+      "Skabet findes ikke.",
+
+    defect:
+      "Dette skab er markeret som defekt.",
+
+    occupied:
+      "Dette skab er allerede optaget.",
+
+    success:
+      "Skabet er registreret.",
+
+    guestSuccess:
+      "Gæsteskabet er registreret.",
+
+    registeredTo:
+      "er nu registreret til",
+
+    guestRegisteredTo:
+      "er nu registreret til gæsten",
+
+    today:
+      "Registreringen gælder kun i dag.",
+
+    error:
+      "Der opstod en fejl.",
+
+    problemButton:
+      "🔧 Fejlmeld mit skab",
+
+    problemLabel:
+      "Hvad er problemet med skabet?",
+
+    problemPlaceholder:
+      "Beskriv problemet...",
+
+    send:
+      "Send fejlmelding",
+
+    sending:
+      "Sender...",
+
+    cancel:
+      "Annuller",
+
+    describe:
+      "Beskriv venligst problemet.",
+
+    sent:
+      "Fejlmeldingen er sendt.",
+
+    admin:
+      "Admin kan nu se problemet og behandle det."
+
+  },
+
+
+  en: {
+
+    title:
+      "Register locker",
+
+    noLocker:
+      "No locker selected",
+
+    locker:
+      "Locker",
+
+    guestInfo:
+      "This is a guest locker and is only valid for today.",
+
+    email:
+      "Norlys email",
+
+    emailPlaceholder:
+      "name@norlys.dk",
+
+    name:
+      "Full name",
+
+    namePlaceholder:
+      "First name Last name",
+
+    guestName:
+      "Guest name",
+
+    guestCompany:
+      "Company (optional)",
+
+    guestCompanyPlaceholder:
+      "Company",
+
+    guestEmail:
+      "Email (optional)",
+
+    guestEmailPlaceholder:
+      "name@example.com",
+
+    code:
+      "4-digit locker code",
+
+    register:
+      "Register locker",
+
+    registering:
+      "Registering...",
+
+    useNorlys:
+      "Please use your Norlys email.",
+
+    enterName:
+      "Please enter your full name.",
+
+    codeError:
+      "The code must contain exactly 4 digits.",
+
+    lockerNotFound:
+      "The locker does not exist.",
+
+    defect:
+      "This locker is marked as defective.",
+
+    occupied:
+      "This locker is already occupied.",
+
+    success:
+      "The locker has been registered.",
+
+    guestSuccess:
+      "The guest locker has been registered.",
+
+    registeredTo:
+      "is now registered to",
+
+    guestRegisteredTo:
+      "is now registered to guest",
+
+    today:
+      "The registration is only valid for today.",
+
+    error:
+      "An error occurred.",
+
+    problemButton:
+      "🔧 Report a problem",
+
+    problemLabel:
+      "What is the problem with the locker?",
+
+    problemPlaceholder:
+      "Describe the problem...",
+
+    send:
+      "Send problem report",
+
+    sending:
+      "Sending...",
+
+    cancel:
+      "Cancel",
+
+    describe:
+      "Please describe the problem.",
+
+    sent:
+      "The problem report has been sent.",
+
+    admin:
+      "Admin can now see and process the problem."
+
+  }
+
+};
+
+
+function setLanguage(language) {
+
+  currentLanguage =
+    language;
+
+  localStorage.setItem(
+    "lockerLanguage",
+    language
+  );
+
+  const t =
+    translations[language];
+
+  document.documentElement.lang =
+    language;
+
+  document.getElementById("pageTitle").textContent =
+    t.title;
+
+  document.getElementById("emailLabel").textContent =
+    t.email;
+
+  document.getElementById("email").placeholder =
+    t.emailPlaceholder;
+
+  document.getElementById("nameLabel").textContent =
+    t.name;
+
+  document.getElementById("name").placeholder =
+    t.namePlaceholder;
+
+  document.getElementById("guestNameLabel").textContent =
+    t.guestName;
+
+  document.getElementById("guestCompanyLabel").textContent =
+    t.guestCompany;
+
+  document.getElementById("guestCompany").placeholder =
+    t.guestCompanyPlaceholder;
+
+  document.getElementById("guestEmailLabel").textContent =
+    t.guestEmail;
+
+  document.getElementById("guestEmail").placeholder =
+    t.guestEmailPlaceholder;
+
+  document.getElementById("lockerCodeLabel").textContent =
+    t.code;
+
+  document.getElementById("registerButton").textContent =
+    t.register;
+
+  document.getElementById("problemButton").textContent =
+    t.problemButton;
+
+  document.getElementById("problemLabel").textContent =
+    t.problemLabel;
+
+  document.getElementById("problemMessage").placeholder =
+    t.problemPlaceholder;
+
+  document.getElementById("sendProblemButton").textContent =
+    t.send;
+
+  document.getElementById("cancelButton").textContent =
+    t.cancel;
+
+  if (isGuest) {
+
+    document.getElementById("guestInfoText").textContent =
+      t.guestInfo;
+
+  }
+
+  document.getElementById("locker").textContent =
+    lockerNumber
+      ? t.locker + " " + lockerNumber
+      : t.noLocker;
+
+}
+
+
+function setupPage() {
+
+  if (isGuest) {
+
+    document
+      .getElementById("guestInfo")
+      .style.display =
+        "block";
+
+    document
+      .getElementById("employeeFields")
+      .classList.add("hidden");
+
+    document
+      .getElementById("employeeNameField")
+      .classList.add("hidden");
+
+    document
+      .getElementById("lockerCodeField")
+      .classList.add("hidden");
+
+    document
+      .getElementById("guestFields")
+      .classList.remove("hidden");
+
+  } else {
+
+    document
+      .getElementById("guestInfo")
+      .style.display =
+        "none";
+
+  }
+
+}
 
 
 document
   .getElementById("lockerCode")
-  .addEventListener("input", function() {
+  .addEventListener(
+    "input",
+    function() {
 
-    this.value =
-      this.value
-        .replace(/\D/g, "")
-        .slice(0, 4);
+      this.value =
+        this.value
+          .replace(/\D/g, "")
+          .slice(0, 4);
 
-  });
+    }
+  );
 
 
 async function registerLocker() {
-
-  const email =
-    document.getElementById("email").value.trim();
-
-  const name =
-    document.getElementById("name").value.trim();
-
-  const lockerCode =
-    document.getElementById("lockerCode").value.trim();
 
   const status =
     document.getElementById("status");
@@ -251,68 +754,441 @@ async function registerLocker() {
   const button =
     document.getElementById("registerButton");
 
+  const t =
+    translations[currentLanguage];
+
 
   if (!lockerNumber) {
 
     status.innerHTML =
-      "<strong>Fejl:</strong> Intet skab valgt.";
+      "<strong>" +
+      t.noLocker +
+      "</strong>";
 
     return;
-  }
 
-
-  if (
-    !email ||
-    !email.toLowerCase().endsWith("@norlys.dk")
-  ) {
-
-    status.innerHTML =
-      "<strong>Brug din Norlys-e-mail.</strong>";
-
-    return;
-  }
-
-
-  if (!name) {
-
-    status.innerHTML =
-      "<strong>Indtast dit fulde navn.</strong>";
-
-    return;
-  }
-
-
-  if (!/^\d{4}$/.test(lockerCode)) {
-
-    status.innerHTML =
-      "<strong>Koden skal være præcis 4 cifre.</strong>";
-
-    return;
   }
 
 
   button.disabled = true;
-  button.textContent = "Registrerer...";
+
+  button.textContent =
+    t.registering;
+
   status.textContent = "";
 
 
   try {
 
-    const lockerResponse = await fetch(
-      `${SUPABASE_URL}/rest/v1/lockers?locker_number=eq.${encodeURIComponent(lockerNumber)}&select=qr_token,status,defect`,
-      {
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`
-        }
+    /*
+     * GÆST
+     */
+
+    if (isGuest) {
+
+      const guestName =
+        document
+          .getElementById("guestName")
+          .value
+          .trim();
+
+      const guestCompany =
+        document
+          .getElementById("guestCompany")
+          .value
+          .trim();
+
+      const guestEmail =
+        document
+          .getElementById("guestEmail")
+          .value
+          .trim();
+
+
+      if (!guestName) {
+
+        throw new Error(
+          t.enterName
+        );
+
       }
-    );
+
+
+      const lockerResponse =
+        await fetch(
+          `${SUPABASE_URL}/rest/v1/lockers?locker_number=eq.${encodeURIComponent(lockerNumber)}&select=id,status,defect`,
+          {
+            headers: {
+              "apikey": SUPABASE_KEY,
+              "Authorization":
+                `Bearer ${SUPABASE_KEY}`
+            }
+          }
+        );
+
+
+      if (!lockerResponse.ok) {
+
+        throw new Error(
+          t.lockerNotFound
+        );
+
+      }
+
+
+      const lockers =
+        await lockerResponse.json();
+
+
+      if (lockers.length === 0) {
+
+        throw new Error(
+          t.lockerNotFound
+        );
+
+      }
+
+
+      const locker =
+        lockers[0];
+
+
+      if (locker.defect === true) {
+
+        throw new Error(
+          t.defect
+        );
+
+      }
+
+
+      if (locker.status !== "available") {
+
+        throw new Error(
+          t.occupied
+        );
+
+      }
+
+
+      /*
+       * Lav et unikt gæste-ID.
+       */
+
+      const guestId =
+        "GUEST-" +
+        Date.now() +
+        "-" +
+        Math.floor(
+          Math.random() * 100000
+        );
+
+
+      /*
+       * Virksomheden gemmes sammen med navnet
+       * i employee_name i historikken.
+       */
+
+      let storedName =
+        guestName;
+
+      if (guestCompany) {
+
+        storedName +=
+          " (" +
+          guestCompany +
+          ")";
+
+      }
+
+
+      /*
+       * Opret gæsten i employees.
+       */
+
+      const employeeResponse =
+        await fetch(
+          `${SUPABASE_URL}/rest/v1/employees`,
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+
+              "apikey":
+                SUPABASE_KEY,
+
+              "Authorization":
+                `Bearer ${SUPABASE_KEY}`,
+
+              "Prefer":
+                "return=representation"
+            },
+
+            body: JSON.stringify({
+
+              employee_id:
+                guestId,
+
+              name:
+                storedName,
+
+              email:
+                guestEmail || guestId,
+
+              active:
+                true
+
+            })
+          }
+        );
+
+
+      if (!employeeResponse.ok) {
+
+        const errorText =
+          await employeeResponse.text();
+
+        throw new Error(
+          `Fejl ${employeeResponse.status}: ${errorText}`
+        );
+
+      }
+
+
+      const employeeData =
+        await employeeResponse.json();
+
+
+      const employeeId =
+        employeeData[0].id;
+
+
+      /*
+       * Optag gæsteskabet.
+       */
+
+      const updateResponse =
+        await fetch(
+          `${SUPABASE_URL}/rest/v1/lockers?locker_number=eq.${encodeURIComponent(lockerNumber)}`,
+          {
+            method: "PATCH",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+
+              "apikey":
+                SUPABASE_KEY,
+
+              "Authorization":
+                `Bearer ${SUPABASE_KEY}`,
+
+              "Prefer":
+                "return=minimal"
+            },
+
+            body: JSON.stringify({
+
+              status:
+                "occupied",
+
+              employee_id:
+                employeeId,
+
+              assigned_at:
+                new Date().toISOString(),
+
+              updated_at:
+                new Date().toISOString()
+
+            })
+          }
+        );
+
+
+      if (!updateResponse.ok) {
+
+        const errorText =
+          await updateResponse.text();
+
+        throw new Error(
+          `Fejl ${updateResponse.status}: ${errorText}`
+        );
+
+      }
+
+
+      /*
+       * Gem i historikken.
+       */
+
+      const historyResponse =
+        await fetch(
+          `${SUPABASE_URL}/rest/v1/locker_history`,
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+
+              "apikey":
+                SUPABASE_KEY,
+
+              "Authorization":
+                `Bearer ${SUPABASE_KEY}`,
+
+              "Prefer":
+                "return=minimal"
+            },
+
+            body: JSON.stringify({
+
+              locker_number:
+                lockerNumber,
+
+              floor:
+                Number(lockerNumber.split(".")[0]),
+
+              employee_id:
+                employeeId,
+
+              employee_name:
+                storedName,
+
+              assigned_at:
+                new Date().toISOString()
+
+            })
+          }
+        );
+
+
+      if (!historyResponse.ok) {
+
+        const errorText =
+          await historyResponse.text();
+
+        throw new Error(
+          `Fejl ${historyResponse.status}: ${errorText}`
+        );
+
+      }
+
+
+      registeredEmail =
+        guestEmail || guestId;
+
+      registeredName =
+        storedName;
+
+
+      document
+        .getElementById("registrationForm")
+        .classList.add("hidden");
+
+
+      status.innerHTML =
+        "<strong>" +
+        t.guestSuccess +
+        "</strong><br><br>" +
+
+        t.locker +
+        " " +
+        lockerNumber +
+        " " +
+        t.guestRegisteredTo +
+        " " +
+        guestName +
+        ".<br><br>" +
+
+        t.today;
+
+
+      document
+        .getElementById("problemSection")
+        .classList.remove("hidden");
+
+
+      return;
+
+    }
+
+
+    /*
+     * NORMAL NORLYS-MEDARBEJDER
+     */
+
+    const email =
+      document
+        .getElementById("email")
+        .value
+        .trim();
+
+    const name =
+      document
+        .getElementById("name")
+        .value
+        .trim();
+
+    const lockerCode =
+      document
+        .getElementById("lockerCode")
+        .value
+        .trim();
+
+
+    if (
+      !email ||
+      !email
+        .toLowerCase()
+        .endsWith("@norlys.dk")
+    ) {
+
+      throw new Error(
+        t.useNorlys
+      );
+
+    }
+
+
+    if (!name) {
+
+      throw new Error(
+        t.enterName
+      );
+
+    }
+
+
+    if (!/^\d{4}$/.test(lockerCode)) {
+
+      throw new Error(
+        t.codeError
+      );
+
+    }
+
+
+    const lockerResponse =
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/lockers?locker_number=eq.${encodeURIComponent(lockerNumber)}&select=qr_token,status,defect`,
+        {
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization":
+              `Bearer ${SUPABASE_KEY}`
+          }
+        }
+      );
 
 
     if (!lockerResponse.ok) {
 
       throw new Error(
-        "Kunne ikke hente skabet."
+        t.lockerNotFound
       );
 
     }
@@ -325,7 +1201,7 @@ async function registerLocker() {
     if (lockers.length === 0) {
 
       throw new Error(
-        "Skabet findes ikke."
+        t.lockerNotFound
       );
 
     }
@@ -338,7 +1214,7 @@ async function registerLocker() {
     if (locker.defect === true) {
 
       throw new Error(
-        "Dette skab er markeret som defekt."
+        t.defect
       );
 
     }
@@ -347,40 +1223,46 @@ async function registerLocker() {
     if (locker.status !== "available") {
 
       throw new Error(
-        "Dette skab er allerede optaget."
+        t.occupied
       );
 
     }
 
 
-    const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/rpc/claim_locker`,
-      {
-        method: "POST",
+    const response =
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/rpc/claim_locker`,
+        {
+          method: "POST",
 
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`
-        },
+          headers: {
+            "Content-Type":
+              "application/json",
 
-        body: JSON.stringify({
+            "apikey":
+              SUPABASE_KEY,
 
-          p_qr_token:
-            locker.qr_token,
+            "Authorization":
+              `Bearer ${SUPABASE_KEY}`
+          },
 
-          p_employee_id:
-            email,
+          body: JSON.stringify({
 
-          p_name:
-            name,
+            p_qr_token:
+              locker.qr_token,
 
-          p_locker_code:
-            lockerCode
+            p_employee_id:
+              email,
 
-        })
-      }
-    );
+            p_name:
+              name,
+
+            p_locker_code:
+              lockerCode
+
+          })
+        }
+      );
 
 
     const resultText =
@@ -396,8 +1278,11 @@ async function registerLocker() {
     }
 
 
-    registeredEmail = email;
-    registeredName = name;
+    registeredEmail =
+      email;
+
+    registeredName =
+      name;
 
 
     document
@@ -406,10 +1291,16 @@ async function registerLocker() {
 
 
     status.innerHTML =
-      "<strong>Skabet er registreret.</strong><br><br>" +
-      "Skab " +
+      "<strong>" +
+      t.success +
+      "</strong><br><br>" +
+
+      t.locker +
+      " " +
       lockerNumber +
-      " er nu registreret til " +
+      " " +
+      t.registeredTo +
+      " " +
       name +
       ".";
 
@@ -422,13 +1313,17 @@ async function registerLocker() {
   } catch (error) {
 
     status.innerHTML =
-      "<strong>Der opstod en fejl.</strong><br><br>" +
+      "<strong>" +
+      t.error +
+      "</strong><br><br>" +
       error.message;
 
 
-    button.disabled = false;
+    button.disabled =
+      false;
+
     button.textContent =
-      "Registrer skab";
+      t.register;
 
   }
 
@@ -470,65 +1365,83 @@ async function sendProblemReport() {
       .trim();
 
   const status =
-    document.getElementById("problemStatus");
+    document
+      .getElementById("problemStatus");
 
   const button =
-    document.getElementById("sendProblemButton");
+    document
+      .getElementById("sendProblemButton");
+
+  const t =
+    translations[currentLanguage];
 
 
   if (!message) {
 
     status.innerHTML =
-      "<strong>Beskriv venligst problemet.</strong>";
+      "<strong>" +
+      t.describe +
+      "</strong>";
 
     return;
+
   }
 
 
-  button.disabled = true;
+  button.disabled =
+    true;
+
   button.textContent =
-    "Sender...";
+    t.sending;
 
   status.textContent = "";
 
 
   try {
 
-    const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/locker_requests`,
-      {
-        method: "POST",
+    const response =
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/locker_requests`,
+        {
+          method: "POST",
 
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`,
-          "Prefer": "return=minimal"
-        },
+          headers: {
+            "Content-Type":
+              "application/json",
 
-        body: JSON.stringify({
+            "apikey":
+              SUPABASE_KEY,
 
-          locker_number:
-            lockerNumber,
+            "Authorization":
+              `Bearer ${SUPABASE_KEY}`,
 
-          employee_name:
-            registeredName,
+            "Prefer":
+              "return=minimal"
+          },
 
-          employee_email:
-            registeredEmail,
+          body: JSON.stringify({
 
-          request_type:
-            "Fejlmelding",
+            locker_number:
+              lockerNumber,
 
-          message:
-            message,
+            employee_name:
+              registeredName,
 
-          status:
-            "open"
+            employee_email:
+              registeredEmail,
 
-        })
-      }
-    );
+            request_type:
+              "Fejlmelding",
+
+            message:
+              message,
+
+            status:
+              "open"
+
+          })
+        }
+      );
 
 
     if (!response.ok) {
@@ -544,31 +1457,45 @@ async function sendProblemReport() {
 
 
     status.innerHTML =
-      "<strong>Fejlmeldingen er sendt.</strong><br><br>" +
-      "Admin kan nu se problemet og behandle det.";
+      "<strong>" +
+      t.sent +
+      "</strong><br><br>" +
+      t.admin;
 
 
     button.textContent =
-      "Sendt";
+      t.send;
 
     document
       .getElementById("problemMessage")
-      .disabled = true;
+      .disabled =
+        true;
 
 
   } catch (error) {
 
     status.innerHTML =
-      "<strong>Der opstod en fejl.</strong><br><br>" +
+      "<strong>" +
+      t.error +
+      "</strong><br><br>" +
       error.message;
 
-    button.disabled = false;
+    button.disabled =
+      false;
+
     button.textContent =
-      "Send fejlmelding";
+      t.send;
 
   }
 
 }
+
+
+setupPage();
+
+setLanguage(
+  currentLanguage
+);
 
 </script>
 
