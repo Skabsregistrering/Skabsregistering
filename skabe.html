@@ -305,6 +305,7 @@ const GUEST_LOCKERS = [
 ];
 
 let selectedLocker = "";
+
 let currentLanguage =
   localStorage.getItem("lockerLanguage") || "da";
 
@@ -417,58 +418,39 @@ function setLanguage(language) {
 }
 
 
-async function expireOldGuestLocker(locker) {
-
-  if (!GUEST_LOCKERS.includes(locker.locker_number)) {
-    return locker;
-  }
-
-  if (
-    locker.status !== "occupied" ||
-    !locker.assigned_at
-  ) {
-    return locker;
-  }
-
-  const assignedDate =
-    new Date(locker.assigned_at)
-      .toLocaleDateString("en-CA");
-
-  const today =
-    new Date()
-      .toLocaleDateString("en-CA");
-
-  if (assignedDate === today) {
-    return locker;
-  }
+/*
+ * Nulstil gamle gæsteskabe først.
+ * 0.007, 0.008 og 0.009 bliver kun nulstillet,
+ * hvis deres booking er fra en tidligere dato.
+ */
+async function resetExpiredGuestLockers() {
 
   try {
 
     await fetch(
-      `${SUPABASE_URL}/rest/v1/lockers?locker_number=eq.${encodeURIComponent(locker.locker_number)}`,
+      `${SUPABASE_URL}/rest/v1/rpc/reset_expired_guest_lockers`,
       {
-        method: "PATCH",
+        method: "POST",
+
         headers: {
           "apikey": SUPABASE_KEY,
           "Authorization": `Bearer ${SUPABASE_KEY}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({
-          status: "available",
-          employee_id: null,
-          assigned_at: null
-        })
+
+        body: JSON.stringify({})
       }
     );
 
-    locker.status = "available";
-    locker.employee_id = null;
-    locker.assigned_at = null;
-
   } catch (error) {
+
+    console.error(
+      "Kunne ikke nulstille gamle gæsteskabe:",
+      error
+    );
+
   }
 
-  return locker;
 }
 
 
@@ -487,6 +469,13 @@ async function loadLockers() {
     t.loading;
 
   try {
+
+    /*
+     * VIGTIGT:
+     * Nulstil gamle gæsteskabe før vi henter
+     * den aktuelle liste.
+     */
+    await resetExpiredGuestLockers();
 
     const response = await fetch(
       `${SUPABASE_URL}/rest/v1/lockers?select=locker_number,floor,status,defect,assigned_at`,
@@ -513,10 +502,6 @@ async function loadLockers() {
 
     let data =
       await response.json();
-
-    for (const locker of data) {
-      await expireOldGuestLocker(locker);
-    }
 
     data.sort((a, b) =>
       a.locker_number.localeCompare(
@@ -612,8 +597,7 @@ async function loadLockers() {
           locker.locker_number;
 
         /*
-         * LEDIGE SKABE
-         * Kan vælges.
+         * LEDIGT SKAB
          */
         if (
           locker.status === "available" &&
@@ -633,11 +617,9 @@ async function loadLockers() {
         }
 
         /*
-         * OPTAGEDE NORMALE SKABE
-         * Kan stadig åbne fejlmelding/nulstilling.
+         * OPTAGET NORMALT SKAB
          *
-         * OPTAGEDE GÆSTESKABE
-         * Gør ingenting og kan ikke åbnes.
+         * Gæsteskabe kommer IKKE ind her.
          */
         if (
           locker.status === "occupied" &&
@@ -657,8 +639,11 @@ async function loadLockers() {
         }
 
         /*
-         * Optaget gæsteskab:
-         * Ingen klik og vis "Optaget" ved musen.
+         * OPTAGET GÆSTESKAB
+         *
+         * Ingen onclick.
+         * Ingen fejlmelding.
+         * Ingen formular.
          */
         if (
           isGuest &&
