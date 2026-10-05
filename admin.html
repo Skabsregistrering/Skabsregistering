@@ -114,9 +114,25 @@
       border-left: 6px solid #ef4444;
     }
 
+    .guest {
+      border-left: 6px solid #2563eb;
+      background: #eff6ff;
+    }
+
     .defective {
       border-left: 6px solid #eab308;
       background: #fffbea;
+    }
+
+    .guest-label {
+      display: inline-block;
+      background: #2563eb;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 5px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 8px;
     }
 
     .history {
@@ -292,16 +308,18 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
   "sb_publishable_XU7y4WVGX4Osj7ixgRIfDA_mHpJ1ttv";
 
+const GUEST_LOCKERS = [
+  "0.007",
+  "0.008",
+  "0.009"
+];
+
 let accessToken = "";
 let currentUser = null;
 let employeeMap = {};
 
 let completedTasksVisible = false;
 
-
-/* =========================
-   HJÆLPEFUNKTIONER
-========================= */
 
 function escapeHtml(value) {
 
@@ -325,6 +343,26 @@ function formatDate(date) {
   }
 
   return new Date(date).toLocaleString("da-DK");
+}
+
+
+function isGuestLocker(locker) {
+
+  return GUEST_LOCKERS.includes(
+    String(locker.locker_number)
+  );
+
+}
+
+
+function isGuestEmployee(employee) {
+
+  return !!(
+    employee &&
+    typeof employee.employee_id === "string" &&
+    employee.employee_id.startsWith("GUEST-")
+  );
+
 }
 
 
@@ -436,6 +474,7 @@ async function loadAdmin() {
 
     await loadTasks();
 
+
     const employeesResponse =
       await fetch(
         `${SUPABASE_URL}/rest/v1/employees?select=id,employee_id,name,email`,
@@ -491,9 +530,14 @@ async function loadAdmin() {
       await historyResponse.json();
 
 
+    /*
+      Vigtigt:
+      locker_code er fjernet fra forespørgslen,
+      da den ikke længere bruges.
+    */
     const lockersResponse =
       await fetch(
-        `${SUPABASE_URL}/rest/v1/lockers?select=id,locker_number,floor,status,employee_id,assigned_at,locker_code,defect&order=locker_number`,
+        `${SUPABASE_URL}/rest/v1/lockers?select=id,locker_number,floor,status,employee_id,assigned_at,defect&order=locker_number`,
         {
           headers: {
             "apikey": SUPABASE_KEY,
@@ -516,10 +560,12 @@ async function loadAdmin() {
     const lockers =
       await lockersResponse.json();
 
+
     renderLockers(
       lockers,
       history
     );
+
 
     status.className =
       "success";
@@ -656,7 +702,7 @@ async function loadTasks() {
 
 
 /* =========================
-   OPRET OPGAVE VISNING
+   OPGAVE VISNING
 ========================= */
 
 function createTaskElement(
@@ -973,6 +1019,10 @@ function renderLockers(
               ]
             : null;
 
+        const guest =
+          isGuestLocker(locker) ||
+          isGuestEmployee(employee);
+
         const lockerHistory =
           history.filter(item =>
             item.locker_number ===
@@ -985,10 +1035,22 @@ function renderLockers(
           );
 
 
+        /*
+          Gæsteskabe får blå visning,
+          hvis de er optaget.
+        */
         if (locker.defect === true) {
 
           lockerDiv.className =
             "locker defective";
+
+        } else if (
+          guest &&
+          locker.status === "occupied"
+        ) {
+
+          lockerDiv.className =
+            "locker guest";
 
         } else {
 
@@ -1041,68 +1103,109 @@ function renderLockers(
           `;
 
         } else if (
-          locker.status ===
-          "occupied"
+          locker.status === "occupied"
         ) {
 
-          html += `
+          if (guest) {
 
-            <strong>Status:</strong>
-            Optaget
-            <br>
+            html += `
+              <div class="guest-label">
+                👤 GÆSTESKAB
+              </div>
 
-            <strong>Navn:</strong>
-            ${escapeHtml(
-              employee?.name ||
-              "Ukendt"
-            )}
-            <br>
+              <br>
 
-            <strong>E-mail:</strong>
-            ${escapeHtml(
-              employee?.email ||
-              "Ukendt"
-            )}
-            <br>
+              <strong>Status:</strong>
+              Optaget
+              <br>
 
-            <strong>4-cifret kode:</strong>
-            ${escapeHtml(
-              locker.locker_code ||
-              "Ingen kode"
-            )}
-            <br>
+              <strong>Gæst:</strong>
+              ${escapeHtml(
+                employee?.name ||
+                "Ukendt"
+              )}
+              <br>
 
-            <strong>Registreret:</strong>
-            ${formatDate(
-              locker.assigned_at
-            )}
-            <br>
+              <strong>E-mail:</strong>
+              ${escapeHtml(
+                employee?.email ||
+                "Ikke oplyst"
+              )}
+              <br>
 
-            <button
-              class="release-button"
-              onclick="releaseLocker(
-                '${locker.id}',
-                '${locker.locker_number}',
-                '${locker.employee_id}'
-              )"
-            >
-              Frigiv skab
-            </button>
+              <strong>Registreret:</strong>
+              ${formatDate(
+                locker.assigned_at
+              )}
+              <br>
 
-            <br>
+              <button
+                class="release-button"
+                onclick="releaseLocker(
+                  '${locker.id}',
+                  '${locker.locker_number}',
+                  '${locker.employee_id}'
+                )"
+              >
+                Frigiv skab
+              </button>
+            `;
 
-            <button
-              class="defect-button"
-              onclick="setLockerDefect(
-                '${locker.id}',
-                '${locker.locker_number}',
-                true
-              )"
-            >
-              🟡 Markér som defekt
-            </button>
+          } else {
 
-          `;
+            html += `
+
+              <strong>Status:</strong>
+              Optaget
+              <br>
+
+              <strong>Navn:</strong>
+              ${escapeHtml(
+                employee?.name ||
+                "Ukendt"
+              )}
+              <br>
+
+              <strong>E-mail:</strong>
+              ${escapeHtml(
+                employee?.email ||
+                "Ukendt"
+              )}
+              <br>
+
+              <strong>Registreret:</strong>
+              ${formatDate(
+                locker.assigned_at
+              )}
+              <br>
+
+              <button
+                class="release-button"
+                onclick="releaseLocker(
+                  '${locker.id}',
+                  '${locker.locker_number}',
+                  '${locker.employee_id}'
+                )"
+              >
+                Frigiv skab
+              </button>
+
+              <br>
+
+              <button
+                class="defect-button"
+                onclick="setLockerDefect(
+                  '${locker.id}',
+                  '${locker.locker_number}',
+                  true
+                )"
+              >
+                🟡 Markér som defekt
+              </button>
+
+            `;
+
+          }
 
         } else {
 
@@ -1347,9 +1450,7 @@ async function releaseLocker(
       );
 
 
-    if (
-      !historyResponse.ok
-    ) {
+    if (!historyResponse.ok) {
 
       const errorText =
         await historyResponse.text();
@@ -1401,9 +1502,7 @@ async function releaseLocker(
       );
 
 
-    if (
-      !lockerResponse.ok
-    ) {
+    if (!lockerResponse.ok) {
 
       const errorText =
         await lockerResponse.text();
