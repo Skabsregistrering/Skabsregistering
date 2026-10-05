@@ -53,7 +53,7 @@
     .guest-info {
       display: none;
       background: #dbeafe;
-      border: 1px solid #93c5fd;
+      border: 1px solid #60a5fa;
       padding: 15px;
       border-radius: 8px;
       margin-bottom: 20px;
@@ -68,8 +68,7 @@
       font-weight: bold;
     }
 
-    input,
-    textarea {
+    input {
       width: 100%;
       box-sizing: border-box;
       padding: 13px;
@@ -77,11 +76,6 @@
       border: 1px solid #ccc;
       border-radius: 6px;
       font-family: Arial, sans-serif;
-    }
-
-    textarea {
-      min-height: 120px;
-      resize: vertical;
     }
 
     button.main-button {
@@ -102,54 +96,22 @@
       cursor: not-allowed;
     }
 
-    .problem-button {
-      background: #f59e0b;
-      color: white;
-      width: 100%;
-      margin-top: 25px;
-      padding: 14px;
-      font-size: 18px;
-      font-weight: bold;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .send-button {
-      background: #2563eb;
-      color: white;
-      width: 100%;
-      margin-top: 25px;
-      padding: 14px;
-      font-size: 18px;
-      font-weight: bold;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .cancel-button {
-      background: #777;
-      color: white;
-      width: 100%;
-      margin-top: 10px;
-      padding: 14px;
-      font-size: 18px;
-      font-weight: bold;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
     .hidden {
-      display: none;
+      display: none !important;
     }
 
-    #status,
-    #problemStatus {
+    #status {
       text-align: center;
       margin-top: 20px;
       font-size: 16px;
+    }
+
+    .success {
+      color: #15803d;
+    }
+
+    .error {
+      color: #b91c1c;
     }
   </style>
 </head>
@@ -163,16 +125,14 @@
 
 <div class="box">
 
-  <h1 id="pageTitle">
-    Registrer skab
-  </h1>
+  <h1 id="pageTitle">Registrer skab</h1>
 
   <div class="locker" id="locker">
     Indlæser...
   </div>
 
   <div class="guest-info" id="guestInfo">
-    🔵 Gæsteskab<br>
+    🔵 <span id="guestTitle">Gæsteskab</span><br>
     <span id="guestInfoText">
       Dette skab gælder kun for i dag.
     </span>
@@ -180,7 +140,7 @@
 
   <div id="registrationForm">
 
-    <!-- NORMAL EMPLOYEE -->
+    <!-- MEDARBEJDER -->
 
     <div id="employeeFields">
 
@@ -195,10 +155,34 @@
         autocomplete="email"
       >
 
+      <label for="name" id="nameLabel">
+        Fulde navn
+      </label>
+
+      <input
+        type="text"
+        id="name"
+        placeholder="Fornavn Efternavn"
+        autocomplete="name"
+      >
+
+      <label for="lockerCode" id="lockerCodeLabel">
+        4-cifret kode til skabet
+      </label>
+
+      <input
+        type="password"
+        id="lockerCode"
+        placeholder="••••"
+        inputmode="numeric"
+        maxlength="4"
+        autocomplete="off"
+      >
+
     </div>
 
 
-    <!-- GUEST -->
+    <!-- GÆST -->
 
     <div id="guestFields" class="hidden">
 
@@ -237,44 +221,6 @@
     </div>
 
 
-    <!-- NORMAL EMPLOYEE NAME -->
-
-    <div id="employeeNameField">
-
-      <label for="name" id="nameLabel">
-        Fulde navn
-      </label>
-
-      <input
-        type="text"
-        id="name"
-        placeholder="Fornavn Efternavn"
-        autocomplete="name"
-      >
-
-    </div>
-
-
-    <!-- LOCKER CODE FOR EMPLOYEES -->
-
-    <div id="lockerCodeField">
-
-      <label for="lockerCode" id="lockerCodeLabel">
-        4-cifret kode til skabet
-      </label>
-
-      <input
-        type="password"
-        id="lockerCode"
-        placeholder="••••"
-        inputmode="numeric"
-        maxlength="4"
-        autocomplete="off"
-      >
-
-    </div>
-
-
     <button
       class="main-button"
       id="registerButton"
@@ -286,54 +232,6 @@
   </div>
 
   <div id="status"></div>
-
-
-  <div id="problemSection" class="hidden">
-
-    <button
-      class="problem-button"
-      onclick="showProblemForm()"
-      id="problemButton"
-    >
-      🔧 Fejlmeld mit skab
-    </button>
-
-  </div>
-
-
-  <div id="problemForm" class="hidden">
-
-    <label
-      for="problemMessage"
-      id="problemLabel"
-    >
-      Hvad er problemet med skabet?
-    </label>
-
-    <textarea
-      id="problemMessage"
-      placeholder="Beskriv problemet..."
-    ></textarea>
-
-    <button
-      class="send-button"
-      id="sendProblemButton"
-      onclick="sendProblemReport()"
-    >
-      Send fejlmelding
-    </button>
-
-    <button
-      class="cancel-button"
-      onclick="hideProblemForm()"
-      id="cancelButton"
-    >
-      Annuller
-    </button>
-
-    <div id="problemStatus"></div>
-
-  </div>
 
 </div>
 
@@ -357,17 +255,11 @@ const GUEST_LOCKERS = [
 const params =
   new URLSearchParams(window.location.search);
 
-
 const lockerNumber =
   params.get("locker");
 
-
 const isGuest =
   GUEST_LOCKERS.includes(lockerNumber);
-
-
-let registeredEmail = "";
-let registeredName = "";
 
 
 let currentLanguage =
@@ -380,14 +272,14 @@ const translations = {
 
     title: "Registrer skab",
 
-    noLocker:
-      "Intet skab valgt",
+    locker: "Skab",
 
-    locker:
-      "Skab",
+    noLocker: "Intet skab valgt.",
+
+    guestTitle: "Gæsteskab",
 
     guestInfo:
-      "Dette skab er et gæsteskab og gælder kun for i dag.",
+      "Dette skab gælder kun for i dag.",
 
     email:
       "Norlys-e-mail",
@@ -403,6 +295,9 @@ const translations = {
 
     guestName:
       "Gæstens navn",
+
+    guestNamePlaceholder:
+      "Fornavn Efternavn",
 
     guestCompany:
       "Virksomhed (valgfrit)",
@@ -431,11 +326,11 @@ const translations = {
     enterName:
       "Indtast dit fulde navn.",
 
+    enterGuestName:
+      "Indtast gæstens navn.",
+
     codeError:
       "Koden skal være præcis 4 cifre.",
-
-    noLocker:
-      "Intet skab valgt.",
 
     lockerNotFound:
       "Skabet findes ikke.",
@@ -462,34 +357,7 @@ const translations = {
       "Registreringen gælder kun i dag.",
 
     error:
-      "Der opstod en fejl.",
-
-    problemButton:
-      "🔧 Fejlmeld mit skab",
-
-    problemLabel:
-      "Hvad er problemet med skabet?",
-
-    problemPlaceholder:
-      "Beskriv problemet...",
-
-    send:
-      "Send fejlmelding",
-
-    sending:
-      "Sender...",
-
-    cancel:
-      "Annuller",
-
-    describe:
-      "Beskriv venligst problemet.",
-
-    sent:
-      "Fejlmeldingen er sendt.",
-
-    admin:
-      "Admin kan nu se problemet og behandle det."
+      "Der opstod en fejl."
 
   },
 
@@ -499,14 +367,17 @@ const translations = {
     title:
       "Register locker",
 
-    noLocker:
-      "No locker selected",
-
     locker:
       "Locker",
 
+    noLocker:
+      "No locker selected.",
+
+    guestTitle:
+      "Guest locker",
+
     guestInfo:
-      "This is a guest locker and is only valid for today.",
+      "This locker is only valid for today.",
 
     email:
       "Norlys email",
@@ -522,6 +393,9 @@ const translations = {
 
     guestName:
       "Guest name",
+
+    guestNamePlaceholder:
+      "First name Last name",
 
     guestCompany:
       "Company (optional)",
@@ -549,6 +423,9 @@ const translations = {
 
     enterName:
       "Please enter your full name.",
+
+    enterGuestName:
+      "Please enter the guest's name.",
 
     codeError:
       "The code must contain exactly 4 digits.",
@@ -578,34 +455,7 @@ const translations = {
       "The registration is only valid for today.",
 
     error:
-      "An error occurred.",
-
-    problemButton:
-      "🔧 Report a problem",
-
-    problemLabel:
-      "What is the problem with the locker?",
-
-    problemPlaceholder:
-      "Describe the problem...",
-
-    send:
-      "Send problem report",
-
-    sending:
-      "Sending...",
-
-    cancel:
-      "Cancel",
-
-    describe:
-      "Please describe the problem.",
-
-    sent:
-      "The problem report has been sent.",
-
-    admin:
-      "Admin can now see and process the problem."
+      "An error occurred."
 
   }
 
@@ -646,6 +496,9 @@ function setLanguage(language) {
   document.getElementById("guestNameLabel").textContent =
     t.guestName;
 
+  document.getElementById("guestName").placeholder =
+    t.guestNamePlaceholder;
+
   document.getElementById("guestCompanyLabel").textContent =
     t.guestCompany;
 
@@ -664,67 +517,45 @@ function setLanguage(language) {
   document.getElementById("registerButton").textContent =
     t.register;
 
-  document.getElementById("problemButton").textContent =
-    t.problemButton;
+  document.getElementById("guestTitle").textContent =
+    t.guestTitle;
 
-  document.getElementById("problemLabel").textContent =
-    t.problemLabel;
-
-  document.getElementById("problemMessage").placeholder =
-    t.problemPlaceholder;
-
-  document.getElementById("sendProblemButton").textContent =
-    t.send;
-
-  document.getElementById("cancelButton").textContent =
-    t.cancel;
-
-  if (isGuest) {
-
-    document.getElementById("guestInfoText").textContent =
-      t.guestInfo;
-
-  }
+  document.getElementById("guestInfoText").textContent =
+    t.guestInfo;
 
   document.getElementById("locker").textContent =
     lockerNumber
       ? t.locker + " " + lockerNumber
       : t.noLocker;
-
 }
 
 
 function setupPage() {
 
+  if (!lockerNumber) {
+
+    document.getElementById("locker").textContent =
+      translations[currentLanguage].noLocker;
+
+    document.getElementById("registrationForm").classList.add("hidden");
+
+    return;
+  }
+
+
   if (isGuest) {
 
     document
       .getElementById("guestInfo")
-      .style.display =
-        "block";
+      .style.display = "block";
 
     document
       .getElementById("employeeFields")
       .classList.add("hidden");
 
     document
-      .getElementById("employeeNameField")
-      .classList.add("hidden");
-
-    document
-      .getElementById("lockerCodeField")
-      .classList.add("hidden");
-
-    document
       .getElementById("guestFields")
       .classList.remove("hidden");
-
-  } else {
-
-    document
-      .getElementById("guestInfo")
-      .style.display =
-        "none";
 
   }
 
@@ -761,12 +592,9 @@ async function registerLocker() {
   if (!lockerNumber) {
 
     status.innerHTML =
-      "<strong>" +
-      t.noLocker +
-      "</strong>";
+      `<strong>${t.noLocker}</strong>`;
 
     return;
-
   }
 
 
@@ -779,6 +607,67 @@ async function registerLocker() {
 
 
   try {
+
+    /*
+     * HENT SKAB
+     */
+
+    const lockerResponse =
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/lockers?locker_number=eq.${encodeURIComponent(lockerNumber)}&select=id,qr_token,status,defect`,
+        {
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization":
+              `Bearer ${SUPABASE_KEY}`
+          }
+        }
+      );
+
+
+    if (!lockerResponse.ok) {
+
+      throw new Error(
+        t.lockerNotFound
+      );
+
+    }
+
+
+    const lockers =
+      await lockerResponse.json();
+
+
+    if (lockers.length === 0) {
+
+      throw new Error(
+        t.lockerNotFound
+      );
+
+    }
+
+
+    const locker =
+      lockers[0];
+
+
+    if (locker.defect === true) {
+
+      throw new Error(
+        t.defect
+      );
+
+    }
+
+
+    if (locker.status !== "available") {
+
+      throw new Error(
+        t.occupied
+      );
+
+    }
+
 
     /*
      * GÆST
@@ -808,72 +697,11 @@ async function registerLocker() {
       if (!guestName) {
 
         throw new Error(
-          t.enterName
+          t.enterGuestName
         );
 
       }
 
-
-      const lockerResponse =
-        await fetch(
-          `${SUPABASE_URL}/rest/v1/lockers?locker_number=eq.${encodeURIComponent(lockerNumber)}&select=id,status,defect`,
-          {
-            headers: {
-              "apikey": SUPABASE_KEY,
-              "Authorization":
-                `Bearer ${SUPABASE_KEY}`
-            }
-          }
-        );
-
-
-      if (!lockerResponse.ok) {
-
-        throw new Error(
-          t.lockerNotFound
-        );
-
-      }
-
-
-      const lockers =
-        await lockerResponse.json();
-
-
-      if (lockers.length === 0) {
-
-        throw new Error(
-          t.lockerNotFound
-        );
-
-      }
-
-
-      const locker =
-        lockers[0];
-
-
-      if (locker.defect === true) {
-
-        throw new Error(
-          t.defect
-        );
-
-      }
-
-
-      if (locker.status !== "available") {
-
-        throw new Error(
-          t.occupied
-        );
-
-      }
-
-
-      /*
-       * Lav et unikt gæste-ID.
-       */
 
       const guestId =
         "GUEST-" +
@@ -884,13 +712,9 @@ async function registerLocker() {
         );
 
 
-      /*
-       * Virksomheden gemmes sammen med navnet
-       * i employee_name i historikken.
-       */
-
       let storedName =
         guestName;
+
 
       if (guestCompany) {
 
@@ -903,7 +727,7 @@ async function registerLocker() {
 
 
       /*
-       * Opret gæsten i employees.
+       * Opret gæst
        */
 
       const employeeResponse =
@@ -965,8 +789,12 @@ async function registerLocker() {
         employeeData[0].id;
 
 
+      const now =
+        new Date().toISOString();
+
+
       /*
-       * Optag gæsteskabet.
+       * Optag gæsteskabet
        */
 
       const updateResponse =
@@ -998,10 +826,10 @@ async function registerLocker() {
                 employeeId,
 
               assigned_at:
-                new Date().toISOString(),
+                now,
 
               updated_at:
-                new Date().toISOString()
+                now
 
             })
           }
@@ -1021,7 +849,7 @@ async function registerLocker() {
 
 
       /*
-       * Gem i historikken.
+       * Gem i historikken
        */
 
       const historyResponse =
@@ -1050,7 +878,9 @@ async function registerLocker() {
                 lockerNumber,
 
               floor:
-                Number(lockerNumber.split(".")[0]),
+                Number(
+                  lockerNumber.split(".")[0]
+                ),
 
               employee_id:
                 employeeId,
@@ -1059,7 +889,7 @@ async function registerLocker() {
                 storedName,
 
               assigned_at:
-                new Date().toISOString()
+                now
 
             })
           }
@@ -1078,47 +908,31 @@ async function registerLocker() {
       }
 
 
-      registeredEmail =
-        guestEmail || guestId;
-
-      registeredName =
-        storedName;
-
-
       document
         .getElementById("registrationForm")
         .classList.add("hidden");
 
 
+      status.className =
+        "success";
+
+
       status.innerHTML =
-        "<strong>" +
-        t.guestSuccess +
-        "</strong><br><br>" +
-
-        t.locker +
-        " " +
-        lockerNumber +
-        " " +
-        t.guestRegisteredTo +
-        " " +
-        guestName +
-        ".<br><br>" +
-
-        t.today;
-
-
-      document
-        .getElementById("problemSection")
-        .classList.remove("hidden");
+        `<strong>${t.guestSuccess}</strong>
+        <br><br>
+        ${t.locker} ${lockerNumber}
+        ${t.guestRegisteredTo}
+        ${guestName}.
+        <br><br>
+        ${t.today}`;
 
 
       return;
-
     }
 
 
     /*
-     * NORMAL NORLYS-MEDARBEJDER
+     * NORMAL MEDARBEJDER
      */
 
     const email =
@@ -1172,62 +986,9 @@ async function registerLocker() {
     }
 
 
-    const lockerResponse =
-      await fetch(
-        `${SUPABASE_URL}/rest/v1/lockers?locker_number=eq.${encodeURIComponent(lockerNumber)}&select=qr_token,status,defect`,
-        {
-          headers: {
-            "apikey": SUPABASE_KEY,
-            "Authorization":
-              `Bearer ${SUPABASE_KEY}`
-          }
-        }
-      );
-
-
-    if (!lockerResponse.ok) {
-
-      throw new Error(
-        t.lockerNotFound
-      );
-
-    }
-
-
-    const lockers =
-      await lockerResponse.json();
-
-
-    if (lockers.length === 0) {
-
-      throw new Error(
-        t.lockerNotFound
-      );
-
-    }
-
-
-    const locker =
-      lockers[0];
-
-
-    if (locker.defect === true) {
-
-      throw new Error(
-        t.defect
-      );
-
-    }
-
-
-    if (locker.status !== "available") {
-
-      throw new Error(
-        t.occupied
-      );
-
-    }
-
+    /*
+     * Registrer medarbejderen
+     */
 
     const response =
       await fetch(
@@ -1255,10 +1016,7 @@ async function registerLocker() {
               email,
 
             p_name:
-              name,
-
-            p_locker_code:
-              lockerCode
+              name
 
           })
         }
@@ -1278,45 +1036,32 @@ async function registerLocker() {
     }
 
 
-    registeredEmail =
-      email;
-
-    registeredName =
-      name;
-
-
     document
       .getElementById("registrationForm")
       .classList.add("hidden");
 
 
+    status.className =
+      "success";
+
+
     status.innerHTML =
-      "<strong>" +
-      t.success +
-      "</strong><br><br>" +
-
-      t.locker +
-      " " +
-      lockerNumber +
-      " " +
-      t.registeredTo +
-      " " +
-      name +
-      ".";
-
-
-    document
-      .getElementById("problemSection")
-      .classList.remove("hidden");
+      `<strong>${t.success}</strong>
+      <br><br>
+      ${t.locker} ${lockerNumber}
+      ${t.registeredTo}
+      ${name}.`;
 
 
   } catch (error) {
 
+    status.className =
+      "error";
+
     status.innerHTML =
-      "<strong>" +
-      t.error +
-      "</strong><br><br>" +
-      error.message;
+      `<strong>${t.error}</strong>
+      <br><br>
+      ${error.message}`;
 
 
     button.disabled =
@@ -1324,167 +1069,6 @@ async function registerLocker() {
 
     button.textContent =
       t.register;
-
-  }
-
-}
-
-
-function showProblemForm() {
-
-  document
-    .getElementById("problemSection")
-    .classList.add("hidden");
-
-  document
-    .getElementById("problemForm")
-    .classList.remove("hidden");
-
-}
-
-
-function hideProblemForm() {
-
-  document
-    .getElementById("problemForm")
-    .classList.add("hidden");
-
-  document
-    .getElementById("problemSection")
-    .classList.remove("hidden");
-
-}
-
-
-async function sendProblemReport() {
-
-  const message =
-    document
-      .getElementById("problemMessage")
-      .value
-      .trim();
-
-  const status =
-    document
-      .getElementById("problemStatus");
-
-  const button =
-    document
-      .getElementById("sendProblemButton");
-
-  const t =
-    translations[currentLanguage];
-
-
-  if (!message) {
-
-    status.innerHTML =
-      "<strong>" +
-      t.describe +
-      "</strong>";
-
-    return;
-
-  }
-
-
-  button.disabled =
-    true;
-
-  button.textContent =
-    t.sending;
-
-  status.textContent = "";
-
-
-  try {
-
-    const response =
-      await fetch(
-        `${SUPABASE_URL}/rest/v1/locker_requests`,
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-
-            "apikey":
-              SUPABASE_KEY,
-
-            "Authorization":
-              `Bearer ${SUPABASE_KEY}`,
-
-            "Prefer":
-              "return=minimal"
-          },
-
-          body: JSON.stringify({
-
-            locker_number:
-              lockerNumber,
-
-            employee_name:
-              registeredName,
-
-            employee_email:
-              registeredEmail,
-
-            request_type:
-              "Fejlmelding",
-
-            message:
-              message,
-
-            status:
-              "open"
-
-          })
-        }
-      );
-
-
-    if (!response.ok) {
-
-      const errorText =
-        await response.text();
-
-      throw new Error(
-        `Fejl ${response.status}: ${errorText}`
-      );
-
-    }
-
-
-    status.innerHTML =
-      "<strong>" +
-      t.sent +
-      "</strong><br><br>" +
-      t.admin;
-
-
-    button.textContent =
-      t.send;
-
-    document
-      .getElementById("problemMessage")
-      .disabled =
-        true;
-
-
-  } catch (error) {
-
-    status.innerHTML =
-      "<strong>" +
-      t.error +
-      "</strong><br><br>" +
-      error.message;
-
-    button.disabled =
-      false;
-
-    button.textContent =
-      t.send;
 
   }
 
