@@ -83,6 +83,11 @@
       cursor: pointer;
     }
 
+    .guest-occupied {
+      background: #2563eb;
+      cursor: not-allowed;
+    }
+
     .defect {
       background: #eab308;
       cursor: not-allowed;
@@ -324,7 +329,8 @@ const translations = {
     fault: "🔧 Fejlmeld skab",
     reset: "🔄 Nulstil mit skab",
     cancel: "Annuller",
-    error: "Der opstod en fejl."
+    error: "Der opstod en fejl.",
+    guestOccupied: "Optaget"
   },
 
   en: {
@@ -346,7 +352,8 @@ const translations = {
     fault: "🔧 Report problem",
     reset: "🔄 Reset my locker",
     cancel: "Cancel",
-    error: "An error occurred."
+    error: "An error occurred.",
+    guestOccupied: "Occupied"
   }
 
 };
@@ -577,6 +584,14 @@ async function loadLockers() {
           lockerClass =
             "defect";
 
+        } else if (
+          isGuest &&
+          locker.status === "occupied"
+        ) {
+
+          lockerClass =
+            "guest-occupied";
+
         } else if (isGuest) {
 
           lockerClass =
@@ -596,6 +611,10 @@ async function loadLockers() {
         lockerDiv.textContent =
           locker.locker_number;
 
+        /*
+         * LEDIGE SKABE
+         * Kan vælges.
+         */
         if (
           locker.status === "available" &&
           locker.defect !== true
@@ -613,9 +632,17 @@ async function loadLockers() {
 
         }
 
+        /*
+         * OPTAGEDE NORMALE SKABE
+         * Kan stadig åbne fejlmelding/nulstilling.
+         *
+         * OPTAGEDE GÆSTESKABE
+         * Gør ingenting og kan ikke åbnes.
+         */
         if (
           locker.status === "occupied" &&
-          locker.defect !== true
+          locker.defect !== true &&
+          !isGuest
         ) {
 
           lockerDiv.onclick =
@@ -626,6 +653,20 @@ async function loadLockers() {
               );
 
             };
+
+        }
+
+        /*
+         * Optaget gæsteskab:
+         * Ingen klik og vis "Optaget" ved musen.
+         */
+        if (
+          isGuest &&
+          locker.status === "occupied"
+        ) {
+
+          lockerDiv.title =
+            t.guestOccupied;
 
         }
 
