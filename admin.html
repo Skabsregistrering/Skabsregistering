@@ -1,9 +1,9 @@
+
 <!DOCTYPE html>
 <html lang="da">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Admin – Skabsregistrering</title>
 
   <style>
@@ -23,13 +23,8 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
-    h1 {
-      text-align: center;
-    }
-
-    h2 {
-      margin-top: 30px;
-    }
+    h1 { text-align: center; }
+    h2 { margin-top: 30px; }
 
     button {
       padding: 10px 15px;
@@ -94,9 +89,7 @@
       margin-top: 10px;
     }
 
-    .floor {
-      margin-top: 30px;
-    }
+    .floor { margin-top: 30px; }
 
     .locker {
       border: 1px solid #ddd;
@@ -106,13 +99,8 @@
       background: #fafafa;
     }
 
-    .available {
-      border-left: 6px solid #22c55e;
-    }
-
-    .occupied {
-      border-left: 6px solid #ef4444;
-    }
+    .available { border-left: 6px solid #22c55e; }
+    .occupied { border-left: 6px solid #ef4444; }
 
     .guest {
       border-left: 6px solid #2563eb;
@@ -133,6 +121,17 @@
       font-size: 12px;
       font-weight: bold;
       margin-bottom: 8px;
+    }
+
+    .locker-code {
+      display: inline-block;
+      background: #e0e7ff;
+      color: #1e40af;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-weight: bold;
+      letter-spacing: 3px;
+      margin: 5px 0;
     }
 
     .history {
@@ -214,119 +213,82 @@
       cursor: pointer;
     }
 
-    #adminContent {
-      display: none;
+    .search-info {
+      color: #555;
+      font-size: 14px;
+      margin: 5px 0 15px;
     }
 
-    #completedTasks {
-      display: none;
+    #adminContent { display: none; }
+    #completedTasks { display: none; }
+
+    @media (max-width: 600px) {
+      body { padding: 8px; }
+      .box { padding: 15px; }
+      .logout-button { float: none; }
     }
   </style>
 </head>
 
 <body>
-
 <div class="box">
 
   <div id="loginBox">
-
     <h1>Admin login</h1>
 
-    <input
-      type="email"
-      id="email"
-      placeholder="E-mail"
-      autocomplete="email"
-    >
+    <input type="email" id="email" placeholder="E-mail" autocomplete="email">
+    <input type="password" id="password" placeholder="Adgangskode" autocomplete="current-password">
 
-    <input
-      type="password"
-      id="password"
-      placeholder="Adgangskode"
-      autocomplete="current-password"
-    >
-
-    <button class="login-button" id="loginButton">
-      Log ind
-    </button>
-
+    <button class="login-button" id="loginButton">Log ind</button>
     <div id="loginStatus"></div>
-
   </div>
 
-
   <div id="adminContent">
-
-    <button class="logout-button" id="logoutButton">
-      Log ud
-    </button>
+    <button class="logout-button" id="logoutButton">Log ud</button>
 
     <h1>Skabsregistrering – Admin</h1>
 
-
     <h2>📋 Åbne opgaver</h2>
-
-    <div id="tasks">
-      Henter opgaver...
-    </div>
-
+    <div id="tasks">Henter opgaver...</div>
 
     <div class="completed-section">
-
-      <button
-        class="history-button"
-        id="completedToggleButton"
-        onclick="toggleCompletedTasks()"
-      >
+      <button class="history-button" id="completedToggleButton" onclick="toggleCompletedTasks()">
         📁 Vis afsluttede opgaver
       </button>
-
       <div id="completedTasks"></div>
-
     </div>
-
 
     <div id="status"></div>
 
+    <h2>🔎 Søg efter medarbejder eller skab</h2>
+    <input
+      type="search"
+      id="lockerSearch"
+      placeholder="Søg på navn, e-mail eller skabsnummer..."
+      autocomplete="off"
+    >
+    <div id="searchInfo" class="search-info"></div>
 
     <h2>🔐 Skabe</h2>
-
-    <div id="lockers">
-      Indlæser skabe...
-    </div>
-
+    <div id="lockers">Indlæser skabe...</div>
   </div>
-
 </div>
 
-
 <script>
+const SUPABASE_URL = "https://pwgwujojffxinfbqjlyb.supabase.co";
+const SUPABASE_KEY = "sb_publishable_XU7y4WVGX4Osj7ixgRIfDA_mHpJ1ttv";
 
-const SUPABASE_URL =
-  "https://pwgwujojffxinfbqjlyb.supabase.co";
-
-const SUPABASE_KEY =
-  "sb_publishable_XU7y4WVGX4Osj7ixgRIfDA_mHpJ1ttv";
-
-const GUEST_LOCKERS = [
-  "0.007",
-  "0.008",
-  "0.009"
-];
+const GUEST_LOCKERS = ["0.007", "0.008", "0.009"];
 
 let accessToken = "";
 let currentUser = null;
 let employeeMap = {};
-
+let allLockers = [];
+let allHistory = [];
 let completedTasksVisible = false;
 
-
 function escapeHtml(value) {
-
-  if (value === null || value === undefined) {
-    return "";
-  }
-
+  if (value === null || value === undefined) return "";
   return String(value)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -335,1341 +297,600 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
-
 function formatDate(date) {
-
-  if (!date) {
-    return "-";
-  }
-
+  if (!date) return "-";
   return new Date(date).toLocaleString("da-DK");
 }
 
-
 function isGuestLocker(locker) {
-
-  return GUEST_LOCKERS.includes(
-    String(locker.locker_number)
-  );
-
+  return GUEST_LOCKERS.includes(String(locker.locker_number));
 }
 
-
 function isGuestEmployee(employee) {
-
   return !!(
     employee &&
     typeof employee.employee_id === "string" &&
     employee.employee_id.startsWith("GUEST-")
   );
-
 }
 
-
-/* =========================
-   LOGIN
-========================= */
-
+/* LOGIN */
 async function login() {
-
-  const email =
-    document.getElementById("email").value.trim();
-
-  const password =
-    document.getElementById("password").value;
-
-  const status =
-    document.getElementById("loginStatus");
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const status = document.getElementById("loginStatus");
 
   status.textContent = "Logger ind...";
 
   try {
-
     const response = await fetch(
       `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
       {
         method: "POST",
-
         headers: {
           "Content-Type": "application/json",
           "apikey": SUPABASE_KEY
         },
-
-        body: JSON.stringify({
-          email: email,
-          password: password
-        })
+        body: JSON.stringify({ email, password })
       }
     );
 
     const data = await response.json();
 
     if (!response.ok) {
-
       throw new Error(
-        data.error_description ||
-        data.msg ||
-        "Login mislykkedes."
+        data.error_description || data.msg || "Login mislykkedes."
       );
-
     }
 
     accessToken = data.access_token;
     currentUser = data.user;
 
-    localStorage.setItem(
-      "admin_access_token",
-      accessToken
-    );
-
-    localStorage.setItem(
-      "admin_user",
-      JSON.stringify(currentUser)
-    );
+    localStorage.setItem("admin_access_token", accessToken);
+    localStorage.setItem("admin_user", JSON.stringify(currentUser));
 
     showAdmin();
-
     await loadAdmin();
-
   } catch (error) {
-
     status.className = "error";
     status.textContent = error.message;
-
   }
-
 }
 
-
-/* =========================
-   VIS ADMIN
-========================= */
-
+/* VIS ADMIN */
 function showAdmin() {
-
-  document.getElementById(
-    "loginBox"
-  ).style.display = "none";
-
-  document.getElementById(
-    "adminContent"
-  ).style.display = "block";
-
+  document.getElementById("loginBox").style.display = "none";
+  document.getElementById("adminContent").style.display = "block";
 }
 
-
-/* =========================
-   HENT ALT
-========================= */
-
+/* HENT DATA */
 async function loadAdmin() {
-
-  const status =
-    document.getElementById("status");
-
-  status.textContent =
-    "Henter data...";
+  const status = document.getElementById("status");
+  status.textContent = "Henter data...";
 
   try {
-
     await loadTasks();
 
-
-    const employeesResponse =
-      await fetch(
-        `${SUPABASE_URL}/rest/v1/employees?select=id,employee_id,name,email`,
-        {
-          headers: {
-            "apikey": SUPABASE_KEY,
-            "Authorization": `Bearer ${accessToken}`
-          }
+    const employeesResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/employees?select=id,employee_id,name,email`,
+      {
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${accessToken}`
         }
-      );
+      }
+    );
 
     if (!employeesResponse.ok) {
-
-      throw new Error(
-        "Kunne ikke hente medarbejdere."
-      );
-
+      throw new Error("Kunne ikke hente medarbejdere.");
     }
 
-    const employees =
-      await employeesResponse.json();
-
+    const employees = await employeesResponse.json();
     employeeMap = {};
 
     employees.forEach(employee => {
-
-      employeeMap[employee.id] =
-        employee;
-
+      employeeMap[employee.id] = employee;
     });
 
-
-    const historyResponse =
-      await fetch(
-        `${SUPABASE_URL}/rest/v1/locker_history?select=id,locker_number,floor,employee_id,employee_name,assigned_at,released_at,released_by&order=assigned_at.desc`,
-        {
-          headers: {
-            "apikey": SUPABASE_KEY,
-            "Authorization": `Bearer ${accessToken}`
-          }
+    const historyResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/locker_history?select=id,locker_number,floor,employee_id,employee_name,assigned_at,released_at,released_by&order=assigned_at.desc`,
+      {
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${accessToken}`
         }
-      );
+      }
+    );
 
     if (!historyResponse.ok) {
-
-      throw new Error(
-        "Kunne ikke hente historik."
-      );
-
+      throw new Error("Kunne ikke hente historik.");
     }
 
-    const history =
-      await historyResponse.json();
-
+    allHistory = await historyResponse.json();
 
     /*
-      Vigtigt:
-      locker_code er fjernet fra forespørgslen,
-      da den ikke længere bruges.
+      locker_code hentes kun i den beskyttede adminvisning.
+      Adgang til kolonnen styres stadig af Supabase RLS og rettigheder.
     */
-    const lockersResponse =
-      await fetch(
-        `${SUPABASE_URL}/rest/v1/lockers?select=id,locker_number,floor,status,employee_id,assigned_at,defect&order=locker_number`,
-        {
-          headers: {
-            "apikey": SUPABASE_KEY,
-            "Authorization": `Bearer ${accessToken}`
-          }
+    const lockersResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/lockers?select=id,locker_number,floor,status,employee_id,assigned_at,defect,locker_code&order=locker_number`,
+      {
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${accessToken}`
         }
-      );
+      }
+    );
 
     if (!lockersResponse.ok) {
-
-      const errorText =
-        await lockersResponse.text();
-
+      const errorText = await lockersResponse.text();
       throw new Error(
         `Kunne ikke hente skabe. Fejl ${lockersResponse.status}: ${errorText}`
       );
-
     }
 
-    const lockers =
-      await lockersResponse.json();
+    allLockers = await lockersResponse.json();
+    renderLockers();
 
-
-    renderLockers(
-      lockers,
-      history
-    );
-
-
-    status.className =
-      "success";
-
-    status.textContent =
-      `${lockers.length} skabe indlæst.`;
-
+    status.className = "success";
+    status.textContent = `${allLockers.length} skabe indlæst.`;
   } catch (error) {
-
-    status.className =
-      "error";
-
-    status.textContent =
-      error.message;
-
+    status.className = "error";
+    status.textContent = error.message;
   }
-
 }
 
-
-/* =========================
-   OPGAVER
-========================= */
-
+/* OPGAVER */
 async function loadTasks() {
+  const openContainer = document.getElementById("tasks");
+  const completedContainer = document.getElementById("completedTasks");
 
-  const openContainer =
-    document.getElementById("tasks");
-
-  const completedContainer =
-    document.getElementById("completedTasks");
-
-  openContainer.innerHTML =
-    "Henter opgaver...";
+  openContainer.innerHTML = "Henter opgaver...";
 
   try {
-
-    const response =
-      await fetch(
-        `${SUPABASE_URL}/rest/v1/locker_requests?select=id,locker_number,employee_name,employee_email,request_type,message,status,created_at,completed_at,completed_by&order=created_at.desc`,
-        {
-          headers: {
-            "apikey": SUPABASE_KEY,
-            "Authorization": `Bearer ${accessToken}`
-          }
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/locker_requests?select=id,locker_number,employee_name,employee_email,request_type,message,status,created_at,completed_at,completed_by&order=created_at.desc`,
+      {
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${accessToken}`
         }
-      );
+      }
+    );
 
     if (!response.ok) {
-
-      const errorText =
-        await response.text();
-
+      const errorText = await response.text();
       throw new Error(
         `Kunne ikke hente opgaver. Fejl ${response.status}: ${errorText}`
       );
-
     }
 
-    const tasks =
-      await response.json();
-
-    const openTasks =
-      tasks.filter(task =>
-        task.status !== "completed"
-      );
-
-    const completedTasks =
-      tasks.filter(task =>
-        task.status === "completed"
-      );
-
+    const tasks = await response.json();
+    const openTasks = tasks.filter(task => task.status !== "completed");
+    const completedTasks = tasks.filter(task => task.status === "completed");
 
     if (openTasks.length === 0) {
-
-      openContainer.innerHTML =
-        "<p>✅ Ingen åbne opgaver.</p>";
-
+      openContainer.innerHTML = "<p>✅ Ingen åbne opgaver.</p>";
     } else {
-
       openContainer.innerHTML = "";
-
       openTasks.forEach(task => {
-
-        openContainer.appendChild(
-          createTaskElement(
-            task,
-            false
-          )
-        );
-
+        openContainer.appendChild(createTaskElement(task, false));
       });
-
     }
-
 
     completedContainer.innerHTML = "";
 
     if (completedTasks.length === 0) {
-
-      completedContainer.innerHTML =
-        "<p>Ingen afsluttede opgaver.</p>";
-
+      completedContainer.innerHTML = "<p>Ingen afsluttede opgaver.</p>";
     } else {
-
       completedTasks.forEach(task => {
-
-        completedContainer.appendChild(
-          createTaskElement(
-            task,
-            true
-          )
-        );
-
+        completedContainer.appendChild(createTaskElement(task, true));
       });
-
     }
 
-    completedContainer.style.display =
-      completedTasksVisible
-        ? "block"
-        : "none";
-
+    completedContainer.style.display = completedTasksVisible ? "block" : "none";
   } catch (error) {
-
     openContainer.innerHTML =
-      `<div class="error">
-        ${escapeHtml(error.message)}
-      </div>`;
-
+      `<div class="error">${escapeHtml(error.message)}</div>`;
   }
-
 }
 
+/* OPGAVE VISNING */
+function createTaskElement(task, completed) {
+  const div = document.createElement("div");
+  div.className = completed ? "task completed-task" : "task";
 
-/* =========================
-   OPGAVE VISNING
-========================= */
+  const statusText = completed ? "Færdig" : "Åben";
+  const statusClass = completed
+    ? "task-status-completed"
+    : "task-status-open";
 
-function createTaskElement(
-  task,
-  completed
-) {
-
-  const div =
-    document.createElement("div");
-
-  div.className =
-    completed
-      ? "task completed-task"
-      : "task";
-
-  const statusText =
-    completed
-      ? "Færdig"
-      : "Åben";
-
-  const statusClass =
-    completed
-      ? "task-status-completed"
-      : "task-status-open";
-
-  const employeeEmail =
-    task.employee_email ||
-    "";
-
-  let emailHtml;
-
-  if (employeeEmail) {
-
-    emailHtml = `
-      <a
-        class="email-link"
-        href="mailto:${encodeURIComponent(employeeEmail)}"
-      >
-        ${escapeHtml(employeeEmail)}
-      </a>
-    `;
-
-  } else {
-
-    emailHtml = "Ukendt";
-
-  }
+  const employeeEmail = task.employee_email || "";
+  const emailHtml = employeeEmail
+    ? `<a class="email-link" href="mailto:${encodeURIComponent(employeeEmail)}">${escapeHtml(employeeEmail)}</a>`
+    : "Ukendt";
 
   let html = `
-
-    <div class="task-title">
-      Skab ${escapeHtml(
-        task.locker_number
-      )}
-    </div>
-
-    <strong>Medarbejder:</strong>
-    ${escapeHtml(
-      task.employee_name ||
-      "Ukendt"
-    )}
-    <br>
-
-    <strong>Norlys-mail:</strong>
-    ${emailHtml}
-    <br>
-
-    <strong>Type:</strong>
-    ${escapeHtml(
-      task.request_type ||
-      "-"
-    )}
-    <br>
-
-    <strong>Beskrivelse:</strong>
-    ${escapeHtml(
-      task.message ||
-      "Ingen beskrivelse"
-    )}
-    <br>
-
-    <strong>Oprettet:</strong>
-    ${formatDate(
-      task.created_at
-    )}
-
+    <div class="task-title">Skab ${escapeHtml(task.locker_number)}</div>
+    <strong>Medarbejder:</strong> ${escapeHtml(task.employee_name || "Ukendt")}<br>
+    <strong>Norlys-mail:</strong> ${emailHtml}<br>
+    <strong>Type:</strong> ${escapeHtml(task.request_type || "-")}<br>
+    <strong>Beskrivelse:</strong> ${escapeHtml(task.message || "Ingen beskrivelse")}<br>
+    <strong>Oprettet:</strong> ${formatDate(task.created_at)}
     <div class="task-status">
-
       <strong>Status:</strong>
-
-      <span class="${statusClass}">
-        ${statusText}
-      </span>
-
+      <span class="${statusClass}">${statusText}</span>
     </div>
-
   `;
 
   if (!completed) {
-
     html += `
-
-      <button
-        class="complete-button"
-        onclick="completeTask('${task.id}')"
-      >
+      <button class="complete-button" onclick="completeTask('${escapeHtml(task.id)}')">
         ✅ Færdig
       </button>
-
     `;
-
   } else {
-
-    html += `
-
-      <strong>Færdiggjort:</strong>
-      ${formatDate(
-        task.completed_at
-      )}
-
-    `;
-
+    html += `<strong>Færdiggjort:</strong> ${formatDate(task.completed_at)}`;
   }
 
-  div.innerHTML =
-    html;
-
+  div.innerHTML = html;
   return div;
-
 }
 
-
-/* =========================
-   VIS / SKJUL AFSLUTTEDE
-========================= */
-
+/* VIS / SKJUL AFSLUTTEDE */
 function toggleCompletedTasks() {
+  const container = document.getElementById("completedTasks");
+  const button = document.getElementById("completedToggleButton");
 
-  const container =
-    document.getElementById(
-      "completedTasks"
-    );
-
-  const button =
-    document.getElementById(
-      "completedToggleButton"
-    );
-
-  completedTasksVisible =
-    !completedTasksVisible;
-
-  container.style.display =
-    completedTasksVisible
-      ? "block"
-      : "none";
-
-  button.textContent =
-    completedTasksVisible
-      ? "📁 Skjul afsluttede opgaver"
-      : "📁 Vis afsluttede opgaver";
-
+  completedTasksVisible = !completedTasksVisible;
+  container.style.display = completedTasksVisible ? "block" : "none";
+  button.textContent = completedTasksVisible
+    ? "📁 Skjul afsluttede opgaver"
+    : "📁 Vis afsluttede opgaver";
 }
 
-
-/* =========================
-   FÆRDIGGØR OPGAVE
-========================= */
-
-async function completeTask(
-  taskId
-) {
-
-  if (!confirm(
-    "Er opgaven færdigbehandlet?"
-  )) {
-    return;
-  }
+/* FÆRDIGGØR OPGAVE */
+async function completeTask(taskId) {
+  if (!confirm("Er opgaven færdigbehandlet?")) return;
 
   try {
-
-    const response =
-      await fetch(
-        `${SUPABASE_URL}/rest/v1/locker_requests?id=eq.${encodeURIComponent(taskId)}`,
-        {
-          method: "PATCH",
-
-          headers: {
-
-            "apikey":
-              SUPABASE_KEY,
-
-            "Authorization":
-              `Bearer ${accessToken}`,
-
-            "Content-Type":
-              "application/json",
-
-            "Prefer":
-              "return=minimal"
-
-          },
-
-          body: JSON.stringify({
-
-            status:
-              "completed",
-
-            completed_at:
-              new Date().toISOString(),
-
-            completed_by:
-              currentUser.id
-
-          })
-
-        }
-      );
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/locker_requests?id=eq.${encodeURIComponent(taskId)}`,
+      {
+        method: "PATCH",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          "Prefer": "return=minimal"
+        },
+        body: JSON.stringify({
+          status: "completed",
+          completed_at: new Date().toISOString(),
+          completed_by: currentUser.id
+        })
+      }
+    );
 
     if (!response.ok) {
-
-      const errorText =
-        await response.text();
-
-      throw new Error(
-        `Kunne ikke færdiggøre opgaven: ${errorText}`
-      );
-
+      const errorText = await response.text();
+      throw new Error(`Kunne ikke færdiggøre opgaven: ${errorText}`);
     }
 
     await loadTasks();
-
   } catch (error) {
-
-    alert(
-      error.message
-    );
-
+    alert(error.message);
   }
-
 }
 
+/* SØGNING */
+function renderLockers() {
+  const container = document.getElementById("lockers");
+  const searchInput = document.getElementById("lockerSearch");
+  const searchInfo = document.getElementById("searchInfo");
 
-/* =========================
-   VIS SKABE
-========================= */
+  const searchTerm = searchInput.value.trim().toLocaleLowerCase("da-DK");
 
-function renderLockers(
-  lockers,
-  history
-) {
+  const filteredLockers = allLockers.filter(locker => {
+    const employee = locker.employee_id
+      ? employeeMap[locker.employee_id]
+      : null;
 
-  const container =
-    document.getElementById(
-      "lockers"
-    );
+    const searchableText = [
+      locker.locker_number,
+      employee?.name,
+      employee?.email,
+      employee?.employee_id
+    ].join(" ").toLocaleLowerCase("da-DK");
+
+    return searchableText.includes(searchTerm);
+  });
+
+  searchInfo.textContent = searchTerm
+    ? `${filteredLockers.length} matchende skabe fundet.`
+    : `${allLockers.length} skabe i alt.`;
 
   container.innerHTML = "";
 
-  const floors = {
+  if (filteredLockers.length === 0) {
+    container.innerHTML = "<p>Ingen skabe eller medarbejdere matcher søgningen.</p>";
+    return;
+  }
 
+  const floors = {
     0: "Stuen",
     1: "Etage 1",
     2: "Etage 2",
     3: "Etage 3"
-
   };
 
-
-  for (
-    let floor = 0;
-    floor <= 3;
-    floor++
-  ) {
-
-    const floorLockers =
-      lockers.filter(locker =>
-        Number(locker.floor) === floor
-      );
-
-    if (
-      floorLockers.length === 0
-    ) {
-      continue;
-    }
-
-    const floorDiv =
-      document.createElement(
-        "div"
-      );
-
-    floorDiv.className =
-      "floor";
-
-    const title =
-      document.createElement(
-        "h2"
-      );
-
-    title.textContent =
-      floors[floor];
-
-    floorDiv.appendChild(
-      title
+  for (let floor = 0; floor <= 3; floor++) {
+    const floorLockers = filteredLockers.filter(
+      locker => Number(locker.floor) === floor
     );
 
+    if (floorLockers.length === 0) continue;
 
-    floorLockers.forEach(
-      locker => {
+    const floorDiv = document.createElement("div");
+    floorDiv.className = "floor";
 
-        const employee =
-          locker.employee_id
-            ? employeeMap[
-                locker.employee_id
-              ]
-            : null;
+    const title = document.createElement("h2");
+    title.textContent = floors[floor];
+    floorDiv.appendChild(title);
 
-        const guest =
-          isGuestLocker(locker) ||
-          isGuestEmployee(employee);
+    floorLockers.forEach(locker => {
+      const employee = locker.employee_id
+        ? employeeMap[locker.employee_id]
+        : null;
 
-        const lockerHistory =
-          history.filter(item =>
-            item.locker_number ===
-            locker.locker_number
-          );
+      const guest = isGuestLocker(locker) || isGuestEmployee(employee);
 
-        const lockerDiv =
-          document.createElement(
-            "div"
-          );
+      const lockerHistory = allHistory.filter(item =>
+        item.locker_number === locker.locker_number
+      );
 
+      const lockerDiv = document.createElement("div");
 
-        /*
-          Gæsteskabe får blå visning,
-          hvis de er optaget.
-        */
-        if (locker.defect === true) {
+      if (locker.defect === true) {
+        lockerDiv.className = "locker defective";
+      } else if (guest && locker.status === "occupied") {
+        lockerDiv.className = "locker guest";
+      } else {
+        lockerDiv.className =
+          "locker " + (locker.status === "occupied" ? "occupied" : "available");
+      }
 
-          lockerDiv.className =
-            "locker defective";
+      let html = `
+        <strong>Skab ${escapeHtml(locker.locker_number)}</strong>
+        <br><br>
+      `;
 
-        } else if (
-          guest &&
-          locker.status === "occupied"
-        ) {
-
-          lockerDiv.className =
-            "locker guest";
-
-        } else {
-
-          lockerDiv.className =
-            "locker " +
-            (
-              locker.status ===
-              "occupied"
-                ? "occupied"
-                : "available"
-            );
-
-        }
-
-
-        let html = `
-
-          <strong>
-            Skab ${escapeHtml(
-              locker.locker_number
-            )}
-          </strong>
-
-          <br><br>
-
+      if (locker.defect === true) {
+        html += `
+          <strong>Status:</strong>
+          <span class="defect-status">🟡 DEFEKT</span>
+          <br>
+          <button class="repair-button"
+            onclick="setLockerDefect('${escapeHtml(locker.id)}','${escapeHtml(locker.locker_number)}',false)">
+            🟢 Markér som repareret
+          </button>
         `;
-
-
-        if (locker.defect === true) {
-
+      } else if (locker.status === "occupied") {
+        if (guest) {
           html += `
-
-            <strong>Status:</strong>
-            <span class="defect-status">
-              🟡 DEFEKT
-            </span>
-            <br>
-
-            <button
-              class="repair-button"
-              onclick="setLockerDefect(
-                '${locker.id}',
-                '${locker.locker_number}',
-                false
-              )"
-            >
-              🟢 Markér som repareret
+            <div class="guest-label">👤 GÆSTESKAB</div><br>
+            <strong>Status:</strong> Optaget<br>
+            <strong>Gæst:</strong> ${escapeHtml(employee?.name || "Ukendt")}<br>
+            <strong>E-mail:</strong> ${escapeHtml(employee?.email || "Ikke oplyst")}<br>
+            <strong>Registreret:</strong> ${formatDate(locker.assigned_at)}<br>
+            <button class="release-button"
+              onclick="releaseLocker('${escapeHtml(locker.id)}','${escapeHtml(locker.locker_number)}','${escapeHtml(locker.employee_id)}')">
+              Frigiv skab
             </button>
-
           `;
-
-        } else if (
-          locker.status === "occupied"
-        ) {
-
-          if (guest) {
-
-            html += `
-              <div class="guest-label">
-                👤 GÆSTESKAB
-              </div>
-
-              <br>
-
-              <strong>Status:</strong>
-              Optaget
-              <br>
-
-              <strong>Gæst:</strong>
-              ${escapeHtml(
-                employee?.name ||
-                "Ukendt"
-              )}
-              <br>
-
-              <strong>E-mail:</strong>
-              ${escapeHtml(
-                employee?.email ||
-                "Ikke oplyst"
-              )}
-              <br>
-
-              <strong>Registreret:</strong>
-              ${formatDate(
-                locker.assigned_at
-              )}
-              <br>
-
-              <button
-                class="release-button"
-                onclick="releaseLocker(
-                  '${locker.id}',
-                  '${locker.locker_number}',
-                  '${locker.employee_id}'
-                )"
-              >
-                Frigiv skab
-              </button>
-            `;
-
-          } else {
-
-            html += `
-
-              <strong>Status:</strong>
-              Optaget
-              <br>
-
-              <strong>Navn:</strong>
-              ${escapeHtml(
-                employee?.name ||
-                "Ukendt"
-              )}
-              <br>
-
-              <strong>E-mail:</strong>
-              ${escapeHtml(
-                employee?.email ||
-                "Ukendt"
-              )}
-              <br>
-
-              <strong>Registreret:</strong>
-              ${formatDate(
-                locker.assigned_at
-              )}
-              <br>
-
-              <button
-                class="release-button"
-                onclick="releaseLocker(
-                  '${locker.id}',
-                  '${locker.locker_number}',
-                  '${locker.employee_id}'
-                )"
-              >
-                Frigiv skab
-              </button>
-
-              <br>
-
-              <button
-                class="defect-button"
-                onclick="setLockerDefect(
-                  '${locker.id}',
-                  '${locker.locker_number}',
-                  true
-                )"
-              >
-                🟡 Markér som defekt
-              </button>
-
-            `;
-
-          }
-
         } else {
-
           html += `
-
-            <strong>Status:</strong>
-            Ledigt
+            <strong>Status:</strong> Optaget<br>
+            <strong>Navn:</strong> ${escapeHtml(employee?.name || "Ukendt")}<br>
+            <strong>E-mail:</strong> ${escapeHtml(employee?.email || "Ukendt")}<br>
+            <strong>Registreret:</strong> ${formatDate(locker.assigned_at)}<br>
+            <strong>Medarbejderkode:</strong><br>
+            <span class="locker-code">${locker.locker_code ? escapeHtml(locker.locker_code) : "Ikke gemt"}</span>
             <br>
-
-            <button
-              class="defect-button"
-              onclick="setLockerDefect(
-                '${locker.id}',
-                '${locker.locker_number}',
-                true
-              )"
-            >
+            <button class="release-button"
+              onclick="releaseLocker('${escapeHtml(locker.id)}','${escapeHtml(locker.locker_number)}','${escapeHtml(locker.employee_id)}')">
+              Frigiv skab
+            </button>
+            <br>
+            <button class="defect-button"
+              onclick="setLockerDefect('${escapeHtml(locker.id)}','${escapeHtml(locker.locker_number)}',true)">
               🟡 Markér som defekt
             </button>
-
           `;
-
         }
-
-
-        if (
-          lockerHistory.length > 0
-        ) {
-
-          html += `
-
-            <details class="history">
-
-              <summary>
-                ▶ Vis historik
-                (${lockerHistory.length})
-              </summary>
-
-          `;
-
-
-          lockerHistory.forEach(
-            item => {
-
-              const releasedText =
-                item.released_at
-                  ? `Frigivet:
-                     ${formatDate(
-                       item.released_at
-                     )}`
-                  : "Ikke frigivet";
-
-              html += `
-
-                <div class="history-item">
-
-                  <strong>
-                    ${escapeHtml(
-                      item.employee_name
-                    )}
-                  </strong>
-
-                  <br>
-
-                  Registreret:
-                  ${formatDate(
-                    item.assigned_at
-                  )}
-
-                  <br>
-
-                  ${releasedText}
-
-                </div>
-
-              `;
-
-            }
-          );
-
-
-          html += `
-            </details>
-          `;
-
-        }
-
-
-        lockerDiv.innerHTML =
-          html;
-
-        floorDiv.appendChild(
-          lockerDiv
-        );
-
+      } else {
+        html += `
+          <strong>Status:</strong> Ledigt<br>
+          <button class="defect-button"
+            onclick="setLockerDefect('${escapeHtml(locker.id)}','${escapeHtml(locker.locker_number)}',true)">
+            🟡 Markér som defekt
+          </button>
+        `;
       }
-    );
 
+      if (lockerHistory.length > 0) {
+        html += `
+          <details class="history">
+            <summary>▶ Vis historik (${lockerHistory.length})</summary>
+        `;
 
-    container.appendChild(
-      floorDiv
-    );
+        lockerHistory.forEach(item => {
+          const releasedText = item.released_at
+            ? `Frigivet: ${formatDate(item.released_at)}`
+            : "Ikke frigivet";
 
+          html += `
+            <div class="history-item">
+              <strong>${escapeHtml(item.employee_name)}</strong><br>
+              Registreret: ${formatDate(item.assigned_at)}<br>
+              ${releasedText}
+            </div>
+          `;
+        });
+
+        html += `</details>`;
+      }
+
+      lockerDiv.innerHTML = html;
+      floorDiv.appendChild(lockerDiv);
+    });
+
+    container.appendChild(floorDiv);
   }
-
 }
 
+/* MARKÉR DEFEKT / REPARERET */
+async function setLockerDefect(lockerId, lockerNumber, isDefect) {
+  const question = isDefect
+    ? `Vil du markere skab ${lockerNumber} som defekt?`
+    : `Er skab ${lockerNumber} blevet repareret?`;
 
-/* =========================
-   MARKÉR DEFEKT / REPARERET
-========================= */
-
-async function setLockerDefect(
-  lockerId,
-  lockerNumber,
-  isDefect
-) {
-
-  const question =
-    isDefect
-      ? `Vil du markere skab ${lockerNumber} som defekt?`
-      : `Er skab ${lockerNumber} blevet repareret?`;
-
-  if (!confirm(question)) {
-    return;
-  }
-
+  if (!confirm(question)) return;
 
   try {
-
-    const response =
-      await fetch(
-        `${SUPABASE_URL}/rest/v1/lockers?id=eq.${encodeURIComponent(lockerId)}`,
-        {
-          method: "PATCH",
-
-          headers: {
-
-            "apikey":
-              SUPABASE_KEY,
-
-            "Authorization":
-              `Bearer ${accessToken}`,
-
-            "Content-Type":
-              "application/json",
-
-            "Prefer":
-              "return=minimal"
-
-          },
-
-          body: JSON.stringify({
-
-            defect:
-              isDefect
-
-          })
-
-        }
-      );
-
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/lockers?id=eq.${encodeURIComponent(lockerId)}`,
+      {
+        method: "PATCH",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          "Prefer": "return=minimal"
+        },
+        body: JSON.stringify({ defect: isDefect })
+      }
+    );
 
     if (!response.ok) {
-
-      const errorText =
-        await response.text();
-
-      throw new Error(
-        `Kunne ikke ændre skabets status: ${errorText}`
-      );
-
+      const errorText = await response.text();
+      throw new Error(`Kunne ikke ændre skabets status: ${errorText}`);
     }
-
 
     await loadAdmin();
-
-
   } catch (error) {
-
-    alert(
-      error.message
-    );
-
+    alert(error.message);
   }
-
 }
 
-
-/* =========================
-   FRIGIV SKAB
-========================= */
-
-async function releaseLocker(
-  lockerId,
-  lockerNumber,
-  employeeId
-) {
-
-  if (!confirm(
-    `Vil du frigive skab ${lockerNumber}?`
-  )) {
-    return;
-  }
-
+/* FRIGIV SKAB */
+async function releaseLocker(lockerId, lockerNumber, employeeId) {
+  if (!confirm(`Vil du frigive skab ${lockerNumber}?`)) return;
 
   try {
-
-    const historyResponse =
-      await fetch(
-        `${SUPABASE_URL}/rest/v1/locker_history?locker_number=eq.${encodeURIComponent(lockerNumber)}&employee_id=eq.${encodeURIComponent(employeeId)}&released_at=is.null&order=assigned_at.desc&limit=1`,
-        {
-          method: "PATCH",
-
-          headers: {
-
-            "apikey":
-              SUPABASE_KEY,
-
-            "Authorization":
-              `Bearer ${accessToken}`,
-
-            "Content-Type":
-              "application/json",
-
-            "Prefer":
-              "return=minimal"
-
-          },
-
-          body: JSON.stringify({
-
-            released_at:
-              new Date().toISOString(),
-
-            released_by:
-              currentUser.id
-
-          })
-
-        }
-      );
-
-
-    if (!historyResponse.ok) {
-
-      const errorText =
-        await historyResponse.text();
-
-      throw new Error(
-        "Kunne ikke opdatere historikken: " +
-        errorText
-      );
-
-    }
-
-
-    const lockerResponse =
-      await fetch(
-        `${SUPABASE_URL}/rest/v1/lockers?id=eq.${encodeURIComponent(lockerId)}`,
-        {
-          method: "PATCH",
-
-          headers: {
-
-            "apikey":
-              SUPABASE_KEY,
-
-            "Authorization":
-              `Bearer ${accessToken}`,
-
-            "Content-Type":
-              "application/json",
-
-            "Prefer":
-              "return=minimal"
-
-          },
-
-          body: JSON.stringify({
-
-            status:
-              "available",
-
-            employee_id:
-              null,
-
-            assigned_at:
-              null
-
-          })
-
-        }
-      );
-
-
-    if (!lockerResponse.ok) {
-
-      const errorText =
-        await lockerResponse.text();
-
-      throw new Error(
-        "Kunne ikke frigive skabet: " +
-        errorText
-      );
-
-    }
-
-
-    await loadAdmin();
-
-
-  } catch (error) {
-
-    alert(
-      error.message
-    );
-
-  }
-
-}
-
-
-/* =========================
-   LOG UD
-========================= */
-
-async function logout() {
-
-  try {
-
-    await fetch(
-      `${SUPABASE_URL}/auth/v1/logout`,
+    const historyResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/locker_history?locker_number=eq.${encodeURIComponent(lockerNumber)}&employee_id=eq.${encodeURIComponent(employeeId)}&released_at=is.null&order=assigned_at.desc&limit=1`,
       {
-        method: "POST",
-
+        method: "PATCH",
         headers: {
-
-          "apikey":
-            SUPABASE_KEY,
-
-          "Authorization":
-            `Bearer ${accessToken}`
-
-        }
-
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          "Prefer": "return=minimal"
+        },
+        body: JSON.stringify({
+          released_at: new Date().toISOString(),
+          released_by: currentUser.id
+        })
       }
     );
 
+    if (!historyResponse.ok) {
+      const errorText = await historyResponse.text();
+      throw new Error("Kunne ikke opdatere historikken: " + errorText);
+    }
+
+    const lockerResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/lockers?id=eq.${encodeURIComponent(lockerId)}`,
+      {
+        method: "PATCH",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          "Prefer": "return=minimal"
+        },
+        body: JSON.stringify({
+          status: "available",
+          employee_id: null,
+          assigned_at: null,
+          locker_code: null
+        })
+      }
+    );
+
+    if (!lockerResponse.ok) {
+      const errorText = await lockerResponse.text();
+      throw new Error("Kunne ikke frigive skabet: " + errorText);
+    }
+
+    await loadAdmin();
   } catch (error) {
+    alert(error.message);
   }
+}
 
+/* LOG UD */
+async function logout() {
+  try {
+    await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": `Bearer ${accessToken}`
+      }
+    });
+  } catch (error) {}
 
-  localStorage.removeItem(
-    "admin_access_token"
-  );
-
-  localStorage.removeItem(
-    "admin_user"
-  );
+  localStorage.removeItem("admin_access_token");
+  localStorage.removeItem("admin_user");
 
   accessToken = "";
   currentUser = null;
+  allLockers = [];
+  allHistory = [];
+  employeeMap = {};
 
-
-  document.getElementById(
-    "adminContent"
-  ).style.display = "none";
-
-
-  document.getElementById(
-    "loginBox"
-  ).style.display = "block";
-
-
-  document.getElementById(
-    "loginStatus"
-  ).textContent = "";
-
+  document.getElementById("adminContent").style.display = "none";
+  document.getElementById("loginBox").style.display = "block";
+  document.getElementById("loginStatus").textContent = "";
 }
 
-
-/* =========================
-   START
-========================= */
-
+/* START */
 async function startAdmin() {
+  const savedToken = localStorage.getItem("admin_access_token");
+  const savedUser = localStorage.getItem("admin_user");
 
-  const savedToken =
-    localStorage.getItem(
-      "admin_access_token"
-    );
-
-  const savedUser =
-    localStorage.getItem(
-      "admin_user"
-    );
-
-
-  if (
-    savedToken &&
-    savedUser
-  ) {
-
+  if (savedToken && savedUser) {
     try {
-
-      accessToken =
-        savedToken;
-
-      currentUser =
-        JSON.parse(
-          savedUser
-        );
-
+      accessToken = savedToken;
+      currentUser = JSON.parse(savedUser);
       showAdmin();
-
       await loadAdmin();
-
       return;
-
     } catch (error) {
-
-      localStorage.removeItem(
-        "admin_access_token"
-      );
-
-      localStorage.removeItem(
-        "admin_user"
-      );
-
+      localStorage.removeItem("admin_access_token");
+      localStorage.removeItem("admin_user");
     }
-
   }
-
 }
 
-
-/* =========================
-   KNAPPER
-========================= */
-
-document
-  .getElementById(
-    "loginButton"
-  )
-  .addEventListener(
-    "click",
-    login
-  );
-
-
-document
-  .getElementById(
-    "logoutButton"
-  )
-  .addEventListener(
-    "click",
-    logout
-  );
-
+/* KNAPPER OG SØGNING */
+document.getElementById("loginButton").addEventListener("click", login);
+document.getElementById("logoutButton").addEventListener("click", logout);
+document.getElementById("lockerSearch").addEventListener("input", renderLockers);
 
 startAdmin();
-
 </script>
-
 </body>
 </html>
