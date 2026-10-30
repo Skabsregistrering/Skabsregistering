@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="da">
 <head>
@@ -1009,14 +1010,17 @@ async function registerLocker() {
 
           body: JSON.stringify({
 
-            p_qr_token:
-              locker.qr_token,
-
             p_employee_id:
               email,
 
+            p_locker_code:
+              lockerCode,
+
             p_name:
-              name
+              name,
+
+            p_qr_token:
+              locker.qr_token
 
           })
         }
@@ -1085,3 +1089,4 @@ setLanguage(
 
 </body>
 </html>
+```
