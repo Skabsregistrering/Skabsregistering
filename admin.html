@@ -409,11 +409,11 @@ async function loadAdmin() {
     allHistory = await historyResponse.json();
 
     /*
-      locker_code hentes kun i den beskyttede adminvisning.
-      Adgang til kolonnen styres stadig af Supabase RLS og rettigheder.
+      locker_code og imported_name hentes kun i den beskyttede adminvisning.
+      Adgang til kolonnerne styres stadig af Supabase RLS og rettigheder.
     */
     const lockersResponse = await fetch(
-      `${SUPABASE_URL}/rest/v1/lockers?select=id,locker_number,floor,status,employee_id,assigned_at,defect,locker_code&order=locker_number`,
+      `${SUPABASE_URL}/rest/v1/lockers?select=id,locker_number,floor,status,employee_id,assigned_at,defect,locker_code,imported_name&order=locker_number`,
       {
         headers: {
           "apikey": SUPABASE_KEY,
@@ -583,7 +583,7 @@ async function completeTask(taskId) {
   }
 }
 
-/* SØGNING */
+/* SØGNING OG VISNING AF SKABE */
 function renderLockers() {
   const container = document.getElementById("lockers");
   const searchInput = document.getElementById("lockerSearch");
@@ -598,6 +598,7 @@ function renderLockers() {
 
     const searchableText = [
       locker.locker_number,
+      locker.imported_name,
       employee?.name,
       employee?.email,
       employee?.employee_id
@@ -662,7 +663,11 @@ function renderLockers() {
 
       let html = `
         <strong>Skab ${escapeHtml(locker.locker_number)}</strong>
-        <br><br>
+        <br>
+        ${locker.imported_name
+          ? `<strong>Navn fra oversigten:</strong> ${escapeHtml(locker.imported_name)}<br>`
+          : ""}
+        <br>
       `;
 
       if (locker.defect === true) {
@@ -824,7 +829,8 @@ async function releaseLocker(lockerId, lockerNumber, employeeId) {
           status: "available",
           employee_id: null,
           assigned_at: null,
-          locker_code: null
+          locker_code: null,
+          imported_name: null
         })
       }
     );
