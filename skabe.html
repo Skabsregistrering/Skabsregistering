@@ -1,39 +1,195 @@
+
 <!DOCTYPE html>
 <html lang="da">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vælg et skab</title>
+
   <style>
-    body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; text-align: center; }
-    .language { text-align: right; max-width: 1000px; margin: 0 auto 10px; }
-    .language button { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; background: white; cursor: pointer; font-weight: bold; }
-    h1 { font-size: 32px; margin-bottom: 30px; }
-    .floor { background: white; max-width: 1000px; margin: 0 auto 30px; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
-    .floor h2 { margin-top: 0; font-size: 26px; }
-    .lockers { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
-    .locker { width: 75px; height: 55px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 15px; }
-    .available { background: #22c55e; cursor: pointer; }
-    .available:hover { background: #16a34a; }
-    .occupied { background: #ef4444; cursor: not-allowed; }
-    .defect { background: #eab308; cursor: not-allowed; }
-    .legend { margin: 20px auto 30px; font-size: 16px; }
-    .legend span { display: inline-block; margin: 5px 10px; font-weight: bold; }
-    .status { margin: 25px auto; font-size: 16px; max-width: 1000px; }
-    .request-section { display: none; max-width: 600px; margin: 30px auto; padding: 25px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.1); text-align: left; }
-    .request-section h2 { margin-top: 0; text-align: center; }
-    label { display: block; margin-top: 15px; margin-bottom: 6px; font-weight: bold; }
-    input, textarea, select { width: 100%; box-sizing: border-box; padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; font-family: Arial, sans-serif; background: white; }
-    textarea { min-height: 100px; resize: vertical; }
-    .action-button { width: 100%; margin-top: 15px; padding: 13px; border: none; border-radius: 6px; color: white; font-size: 17px; font-weight: bold; cursor: pointer; }
-    .fault-button { background: #f59e0b; }
-    .hint { color: #555; font-size: 14px; line-height: 1.45; }
-    .request-status { text-align: center; margin-top: 15px; font-weight: bold; overflow-wrap: anywhere; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .language {
+      text-align: right;
+      max-width: 1000px;
+      margin: 0 auto 10px;
+    }
+
+    .language button {
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 30px;
+    }
+
+    .floor {
+      background: white;
+      max-width: 1000px;
+      margin: 0 auto 30px;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.1);
+    }
+
+    .floor h2 {
+      margin-top: 0;
+      font-size: 26px;
+    }
+
+    .lockers {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .locker {
+      width: 75px;
+      height: 55px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: white;
+      font-size: 15px;
+    }
+
+    .available {
+      background: #22c55e;
+      cursor: pointer;
+    }
+
+    .available:hover {
+      background: #16a34a;
+    }
+
+    .occupied {
+      background: #ef4444;
+      cursor: not-allowed;
+    }
+
+    .defect {
+      background: #eab308;
+      cursor: not-allowed;
+    }
+
+    .legend {
+      margin: 20px auto 30px;
+      font-size: 16px;
+    }
+
+    .legend span {
+      display: inline-block;
+      margin: 5px 10px;
+      font-weight: bold;
+    }
+
+    .status {
+      margin: 25px auto;
+      font-size: 16px;
+      max-width: 1000px;
+    }
+
+    .request-section {
+      display: none;
+      max-width: 600px;
+      margin: 30px auto;
+      padding: 25px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.1);
+      text-align: left;
+    }
+
+    .request-section h2 {
+      margin-top: 0;
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      margin-bottom: 6px;
+      font-weight: bold;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-family: Arial, sans-serif;
+      background: white;
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .action-button {
+      width: 100%;
+      margin-top: 15px;
+      padding: 13px;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .fault-button {
+      background: #f59e0b;
+    }
+
+    .hint {
+      color: #555;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .request-status {
+      text-align: center;
+      margin-top: 15px;
+      font-weight: bold;
+      overflow-wrap: anywhere;
+    }
+
     @media (max-width: 600px) {
-      body { padding: 12px; }
-      h1 { font-size: 27px; }
-      .floor { padding: 14px; }
-      .locker { width: 66px; height: 50px; font-size: 14px; }
+      body {
+        padding: 12px;
+      }
+
+      h1 {
+        font-size: 27px;
+      }
+
+      .floor {
+        padding: 14px;
+      }
+
+      .locker {
+        width: 66px;
+        height: 50px;
+        font-size: 14px;
+      }
     }
   </style>
 </head>
@@ -54,36 +210,71 @@
   </div>
 
   <div id="lockers">Indlæser skabe...</div>
+
   <div class="status" id="status"></div>
 
   <section class="request-section" id="requestSection">
 
-    <h2 id="requestTitle">Fejlmelding eller nulstilling</h2>
+    <h2 id="requestTitle">Fejlmelding eller anmodning</h2>
 
     <p class="hint" id="requestHint">
-      Brug feltet til at sende en fejlmelding eller anmode om nulstilling af dit eget skab.
+      Indsend en fejlmelding eller anmodning.
+      Admin kontrollerer oplysningerne, før der foretages ændringer.
     </p>
 
-    <label for="requestLocker" id="lockerLabel">Skabsnummer</label>
-    <input id="requestLocker" type="text" inputmode="decimal" placeholder="Fx 2.208">
+    <label for="requestLocker" id="lockerLabel">
+      Skabsnummer
+    </label>
 
-    <label for="employeeEmail" id="emailLabel">Norlys-e-mail</label>
-    <input type="email" id="employeeEmail" placeholder="navn@norlys.dk">
+    <input
+      id="requestLocker"
+      type="text"
+      inputmode="decimal"
+      placeholder="Fx 2.208"
+      maxlength="10"
+    >
 
-    <label for="employeeName" id="nameLabel">Fulde navn</label>
-    <input type="text" id="employeeName" placeholder="Fornavn Efternavn">
+    <label for="employeeName" id="nameLabel">
+      Fulde navn
+    </label>
 
-    <label for="requestType" id="requestTypeLabel">Hvad ønsker du?</label>
+    <input
+      type="text"
+      id="employeeName"
+      placeholder="Fornavn Efternavn"
+      maxlength="150"
+      autocomplete="name"
+    >
+
+    <label for="requestType" id="requestTypeLabel">
+      Hvad ønsker du?
+    </label>
 
     <select id="requestType">
-      <option value="Fejlmelding" id="faultOption">Fejlmeld skab</option>
-      <option value="Nulstilling ønsket" id="resetOption">Nulstil mit skab</option>
+      <option value="fault" id="faultOption">
+        Fejlmeld skab
+      </option>
+
+      <option value="reset" id="resetOption">
+        Anmod om nulstilling
+      </option>
     </select>
 
-    <label for="problemMessage" id="problemLabel">Beskrivelse (kun ved fejlmelding)</label>
-    <textarea id="problemMessage" placeholder="Beskriv problemet..."></textarea>
+    <label for="problemMessage" id="problemLabel">
+      Beskrivelse (kun ved fejlmelding)
+    </label>
 
-    <button class="action-button fault-button" onclick="sendRequest()" id="sendButton">
+    <textarea
+      id="problemMessage"
+      placeholder="Beskriv problemet..."
+      maxlength="2000"
+    ></textarea>
+
+    <button
+      class="action-button fault-button"
+      onclick="sendRequest()"
+      id="sendButton"
+    >
       Send anmodning
     </button>
 
@@ -93,11 +284,14 @@
 
 <script>
 
-const SUPABASE_URL = "https://pwgwujojffxinfbqjlyb.supabase.co";
+const SUPABASE_URL =
+  "https://pwgwujojffxinfbqjlyb.supabase.co";
 
-const SUPABASE_KEY = "sb_publishable_XU7y4WVGX4Osj7ixgRIfDA_mHpJ1ttv";
+const SUPABASE_KEY =
+  "sb_publishable_XU7y4WVGX4Osj7ixgRIfDA_mHpJ1ttv";
 
-let currentLanguage = localStorage.getItem("lockerLanguage") || "da";
+let currentLanguage =
+  localStorage.getItem("lockerLanguage") || "da";
 
 
 const translations = {
@@ -107,28 +301,40 @@ const translations = {
     available: "🟢 Ledigt",
     occupied: "🔴 Optaget",
     defect: "🟡 Defekt",
+
     ground: "Stuen",
     floor1: "Etage 1",
     floor2: "Etage 2",
     floor3: "Etage 3",
+
     loading: "Indlæser skabe...",
     status: "Grøn = ledigt · Rød = optaget · Gul = defekt",
-    requestTitle: "Fejlmelding eller nulstilling",
-    requestHint: "Brug feltet til at sende en fejlmelding eller anmode om nulstilling af dit eget skab.",
+
+    requestTitle: "Fejlmelding eller anmodning",
+
+    requestHint:
+      "Indsend en fejlmelding eller anmodning. Admin kontrollerer oplysningerne, før der foretages ændringer.",
+
     locker: "Skabsnummer",
-    email: "Norlys-e-mail",
     name: "Fulde navn",
     requestType: "Hvad ønsker du?",
+
     faultOption: "Fejlmeld skab",
-    resetOption: "Nulstil mit skab",
+    resetOption: "Anmod om nulstilling",
+
     problem: "Beskrivelse (kun ved fejlmelding)",
+
     send: "Send anmodning",
+
     lockerError: "Indtast skabsnummeret.",
-    emailError: "Brug din Norlys-e-mail (@norlys.dk).",
     nameError: "Indtast dit fulde navn.",
     messageError: "Beskriv venligst problemet.",
+
     sending: "Sender anmodning...",
-    sent: "✅ Anmodningen er sendt.",
+
+    sent:
+      "✅ Anmodningen er sendt til admin og afventer kontrol.",
+
     error: "Der opstod en fejl."
   },
 
@@ -137,33 +343,47 @@ const translations = {
     available: "🟢 Available",
     occupied: "🔴 Occupied",
     defect: "🟡 Defective",
+
     ground: "Ground floor",
     floor1: "1st floor",
     floor2: "2nd floor",
     floor3: "3rd floor",
+
     loading: "Loading lockers...",
     status: "Green = available · Red = occupied · Yellow = defective",
-    requestTitle: "Report a problem or request a reset",
-    requestHint: "Use this section to report a problem or request a reset for your own locker.",
+
+    requestTitle: "Problem report or request",
+
+    requestHint:
+      "Submit a problem report or request. Admin will verify the information before making changes.",
+
     locker: "Locker number",
-    email: "Norlys email",
     name: "Full name",
     requestType: "What do you need?",
+
     faultOption: "Report a problem",
-    resetOption: "Reset my locker",
+    resetOption: "Request a reset",
+
     problem: "Description (for problem reports only)",
+
     send: "Send request",
+
     lockerError: "Enter the locker number.",
-    emailError: "Use your Norlys email (@norlys.dk).",
     nameError: "Enter your full name.",
     messageError: "Please describe the problem.",
+
     sending: "Sending request...",
-    sent: "✅ Request sent.",
+
+    sent:
+      "✅ Request sent to admin and awaiting review.",
+
     error: "An error occurred."
   }
 
 };
 
+
+/* SPROG */
 
 function setLanguage(language) {
 
@@ -176,38 +396,47 @@ function setLanguage(language) {
   document.documentElement.lang = language;
 
   document.getElementById("pageTitle").textContent = t.title;
+
   document.getElementById("availableText").textContent = t.available;
   document.getElementById("occupiedText").textContent = t.occupied;
   document.getElementById("defectText").textContent = t.defect;
 
   document.getElementById("requestTitle").textContent = t.requestTitle;
   document.getElementById("requestHint").textContent = t.requestHint;
+
   document.getElementById("lockerLabel").textContent = t.locker;
-  document.getElementById("emailLabel").textContent = t.email;
   document.getElementById("nameLabel").textContent = t.name;
+
   document.getElementById("requestTypeLabel").textContent = t.requestType;
+
   document.getElementById("faultOption").textContent = t.faultOption;
   document.getElementById("resetOption").textContent = t.resetOption;
+
   document.getElementById("problemLabel").textContent = t.problem;
+
   document.getElementById("sendButton").textContent = t.send;
+
   document.getElementById("status").textContent = t.status;
 
   loadLockers();
-
 }
 
 
+/* HENT SKABE */
+
 async function loadLockers() {
 
-  const container = document.getElementById("lockers");
-  const status = document.getElementById("status");
+  const container =
+    document.getElementById("lockers");
+
+  const status =
+    document.getElementById("status");
+
   const t = translations[currentLanguage];
 
   container.textContent = t.loading;
 
   try {
-
-    // Henter kun data. Ingen gæstefunktion eller automatisk nulstilling af skabe.
 
     const response = await fetch(
       `${SUPABASE_URL}/rest/v1/lockers?select=locker_number,floor,status,defect`,
@@ -225,7 +454,8 @@ async function loadLockers() {
 
       container.innerHTML = "";
 
-      status.textContent = `Fejl ${response.status}: ${errorText}`;
+      status.textContent =
+        `Fejl ${response.status}: ${errorText}`;
 
       return;
     }
@@ -258,14 +488,18 @@ async function loadLockers() {
       if (!floorLockers.length) continue;
 
       const floorDiv = document.createElement("div");
+
       floorDiv.className = "floor";
 
       const title = document.createElement("h2");
-      title.textContent = floors[floor] || `Etage ${floor}`;
+
+      title.textContent =
+        floors[floor] || `Etage ${floor}`;
 
       floorDiv.appendChild(title);
 
       const lockersDiv = document.createElement("div");
+
       lockersDiv.className = "lockers";
 
       floorLockers.forEach(locker => {
@@ -275,18 +509,27 @@ async function loadLockers() {
         let lockerClass = "occupied";
 
         if (locker.defect === true) {
+
           lockerClass = "defect";
+
         } else if (locker.status === "available") {
+
           lockerClass = "available";
+
         } else if (locker.status === "occupied") {
+
           lockerClass = "occupied";
+
         }
 
-        lockerDiv.className = `locker ${lockerClass}`;
-        lockerDiv.textContent = locker.locker_number;
+        lockerDiv.className =
+          `locker ${lockerClass}`;
 
-        // Kun ledige skabe kan vælges.
-        // Optagede og defekte skabe har ingen klikfunktion.
+        lockerDiv.textContent =
+          locker.locker_number;
+
+        // Kun ledige skabe kan vælges til registrering.
+        // Optagede og defekte skabe kan ikke ændres her.
 
         if (
           locker.status === "available" &&
@@ -296,7 +539,9 @@ async function loadLockers() {
           lockerDiv.onclick = () => {
 
             window.location.href =
-              `registrer.html?locker=${encodeURIComponent(locker.locker_number)}`;
+              `registrer.html?locker=${encodeURIComponent(
+                locker.locker_number
+              )}`;
 
           };
 
@@ -307,7 +552,10 @@ async function loadLockers() {
 
         } else {
 
-          lockerDiv.setAttribute("aria-disabled", "true");
+          lockerDiv.setAttribute(
+            "aria-disabled",
+            "true"
+          );
 
         }
 
@@ -316,11 +564,13 @@ async function loadLockers() {
       });
 
       floorDiv.appendChild(lockersDiv);
+
       container.appendChild(floorDiv);
 
     }
 
-    document.getElementById("requestSection").style.display = "block";
+    document.getElementById("requestSection").style.display =
+      "block";
 
     status.textContent = t.status;
 
@@ -328,20 +578,20 @@ async function loadLockers() {
 
     container.innerHTML = "";
 
-    status.textContent = `${t.error} ${error.message}`;
+    status.textContent =
+      `${t.error} ${error.message}`;
 
   }
 
 }
 
 
+/* SEND ANMODNING TIL ADMIN */
+
 async function sendRequest() {
 
   const lockerNumber =
     document.getElementById("requestLocker").value.trim();
-
-  const email =
-    document.getElementById("employeeEmail").value.trim();
 
   const name =
     document.getElementById("employeeName").value.trim();
@@ -355,31 +605,37 @@ async function sendRequest() {
   const status =
     document.getElementById("requestStatus");
 
+  const sendButton =
+    document.getElementById("sendButton");
+
   const t = translations[currentLanguage];
 
 
   if (!lockerNumber) {
+
     status.textContent = t.lockerError;
     return;
-  }
 
-  if (!email || !email.toLowerCase().endsWith("@norlys.dk")) {
-    status.textContent = t.emailError;
-    return;
   }
 
   if (!name) {
+
     status.textContent = t.nameError;
     return;
+
   }
 
-  if (requestType === "Fejlmelding" && !message) {
+  if (requestType === "fault" && !message) {
+
     status.textContent = t.messageError;
     return;
+
   }
 
 
   status.textContent = t.sending;
+
+  sendButton.disabled = true;
 
 
   try {
@@ -398,9 +654,13 @@ async function sendRequest() {
         body: JSON.stringify({
 
           p_locker_number: lockerNumber,
-          p_employee_email: email,
+
+          p_employee_email: null,
+
           p_employee_name: name,
+
           p_request_type: requestType,
+
           p_message: message || null
 
         })
@@ -419,36 +679,68 @@ async function sendRequest() {
     }
 
 
+    const result = await response.json();
+
+    if (!result || result.success !== true) {
+
+      throw new Error(
+        result?.message || t.error
+      );
+
+    }
+
+
     status.textContent = t.sent;
+
+    document.getElementById("requestLocker").value = "";
+
+    document.getElementById("employeeName").value = "";
 
     document.getElementById("problemMessage").value = "";
 
 
   } catch (error) {
 
-    status.textContent = error.message || t.error;
+    status.textContent =
+      error.message || t.error;
+
+  } finally {
+
+    sendButton.disabled = false;
 
   }
 
 }
 
 
-document.getElementById("requestType").addEventListener("change", () => {
+/* BESKRIVELSE KUN VED FEJLMELDING */
 
-  const isFault =
-    document.getElementById("requestType").value === "Fejlmelding";
+document
+  .getElementById("requestType")
+  .addEventListener("change", () => {
 
-  document.getElementById("problemMessage").disabled = !isFault;
+    const isFault =
+      document.getElementById("requestType").value === "fault";
 
-  if (!isFault) {
-    document.getElementById("problemMessage").value = "";
-  }
+    const messageField =
+      document.getElementById("problemMessage");
 
-});
+    messageField.disabled = !isFault;
 
+    if (!isFault) {
+
+      messageField.value = "";
+
+    }
+
+  });
+
+
+/* START */
 
 setLanguage(currentLanguage);
 
 </script>
+
 </body>
 </html>
