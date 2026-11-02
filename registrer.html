@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="da">
 <head>
@@ -49,17 +48,6 @@
       font-size: 26px;
       font-weight: bold;
       margin: 25px 0;
-    }
-
-    .guest-info {
-      display: none;
-      background: #dbeafe;
-      border: 1px solid #60a5fa;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      text-align: center;
-      font-weight: bold;
     }
 
     label {
@@ -132,16 +120,7 @@
     Indlæser...
   </div>
 
-  <div class="guest-info" id="guestInfo">
-    🔵 <span id="guestTitle">Gæsteskab</span><br>
-    <span id="guestInfoText">
-      Dette skab gælder kun for i dag.
-    </span>
-  </div>
-
   <div id="registrationForm">
-
-    <!-- MEDARBEJDER -->
 
     <div id="employeeFields">
 
@@ -182,46 +161,6 @@
 
     </div>
 
-
-    <!-- GÆST -->
-
-    <div id="guestFields" class="hidden">
-
-      <label for="guestName" id="guestNameLabel">
-        Gæstens navn
-      </label>
-
-      <input
-        type="text"
-        id="guestName"
-        placeholder="Fornavn Efternavn"
-        autocomplete="name"
-      >
-
-      <label for="guestCompany" id="guestCompanyLabel">
-        Virksomhed (valgfrit)
-      </label>
-
-      <input
-        type="text"
-        id="guestCompany"
-        placeholder="Virksomhed"
-      >
-
-      <label for="guestEmail" id="guestEmailLabel">
-        E-mail (valgfrit)
-      </label>
-
-      <input
-        type="email"
-        id="guestEmail"
-        placeholder="navn@eksempel.dk"
-        autocomplete="email"
-      >
-
-    </div>
-
-
     <button
       class="main-button"
       id="registerButton"
@@ -246,21 +185,11 @@ const SUPABASE_KEY =
   "sb_publishable_XU7y4WVGX4Osj7ixgRIfDA_mHpJ1ttv";
 
 
-const GUEST_LOCKERS = [
-  "0.007",
-  "0.008",
-  "0.009"
-];
-
-
 const params =
   new URLSearchParams(window.location.search);
 
 const lockerNumber =
   params.get("locker");
-
-const isGuest =
-  GUEST_LOCKERS.includes(lockerNumber);
 
 
 let currentLanguage =
@@ -277,186 +206,80 @@ const translations = {
 
     noLocker: "Intet skab valgt.",
 
-    guestTitle: "Gæsteskab",
+    email: "Norlys-e-mail",
 
-    guestInfo:
-      "Dette skab gælder kun for i dag.",
+    emailPlaceholder: "navn@norlys.dk",
 
-    email:
-      "Norlys-e-mail",
+    name: "Fulde navn",
 
-    emailPlaceholder:
-      "navn@norlys.dk",
+    namePlaceholder: "Fornavn Efternavn",
 
-    name:
-      "Fulde navn",
+    code: "4-cifret kode til skabet",
 
-    namePlaceholder:
-      "Fornavn Efternavn",
+    register: "Registrer skab",
 
-    guestName:
-      "Gæstens navn",
+    registering: "Registrerer...",
 
-    guestNamePlaceholder:
-      "Fornavn Efternavn",
+    useNorlys: "Brug din Norlys-e-mail.",
 
-    guestCompany:
-      "Virksomhed (valgfrit)",
+    enterName: "Indtast dit fulde navn.",
 
-    guestCompanyPlaceholder:
-      "Virksomhed",
+    codeError: "Koden skal være præcis 4 cifre.",
 
-    guestEmail:
-      "E-mail (valgfrit)",
+    lockerNotFound: "Skabet findes ikke.",
 
-    guestEmailPlaceholder:
-      "navn@eksempel.dk",
+    defect: "Dette skab er markeret som defekt.",
 
-    code:
-      "4-cifret kode til skabet",
+    occupied: "Dette skab er allerede optaget.",
 
-    register:
-      "Registrer skab",
+    success: "Skabet er registreret.",
 
-    registering:
-      "Registrerer...",
+    registeredTo: "er nu registreret til",
 
-    useNorlys:
-      "Brug din Norlys-e-mail.",
-
-    enterName:
-      "Indtast dit fulde navn.",
-
-    enterGuestName:
-      "Indtast gæstens navn.",
-
-    codeError:
-      "Koden skal være præcis 4 cifre.",
-
-    lockerNotFound:
-      "Skabet findes ikke.",
-
-    defect:
-      "Dette skab er markeret som defekt.",
-
-    occupied:
-      "Dette skab er allerede optaget.",
-
-    success:
-      "Skabet er registreret.",
-
-    guestSuccess:
-      "Gæsteskabet er registreret.",
-
-    registeredTo:
-      "er nu registreret til",
-
-    guestRegisteredTo:
-      "er nu registreret til gæsten",
-
-    today:
-      "Registreringen gælder kun i dag.",
-
-    error:
-      "Der opstod en fejl."
+    error: "Der opstod en fejl."
 
   },
 
 
   en: {
 
-    title:
-      "Register locker",
+    title: "Register locker",
 
-    locker:
-      "Locker",
+    locker: "Locker",
 
-    noLocker:
-      "No locker selected.",
+    noLocker: "No locker selected.",
 
-    guestTitle:
-      "Guest locker",
+    email: "Norlys email",
 
-    guestInfo:
-      "This locker is only valid for today.",
+    emailPlaceholder: "name@norlys.dk",
 
-    email:
-      "Norlys email",
+    name: "Full name",
 
-    emailPlaceholder:
-      "name@norlys.dk",
+    namePlaceholder: "First name Last name",
 
-    name:
-      "Full name",
+    code: "4-digit locker code",
 
-    namePlaceholder:
-      "First name Last name",
+    register: "Register locker",
 
-    guestName:
-      "Guest name",
+    registering: "Registering...",
 
-    guestNamePlaceholder:
-      "First name Last name",
+    useNorlys: "Please use your Norlys email.",
 
-    guestCompany:
-      "Company (optional)",
+    enterName: "Please enter your full name.",
 
-    guestCompanyPlaceholder:
-      "Company",
+    codeError: "The code must contain exactly 4 digits.",
 
-    guestEmail:
-      "Email (optional)",
+    lockerNotFound: "The locker does not exist.",
 
-    guestEmailPlaceholder:
-      "name@example.com",
+    defect: "This locker is marked as defective.",
 
-    code:
-      "4-digit locker code",
+    occupied: "This locker is already occupied.",
 
-    register:
-      "Register locker",
+    success: "The locker has been registered.",
 
-    registering:
-      "Registering...",
+    registeredTo: "is now registered to",
 
-    useNorlys:
-      "Please use your Norlys email.",
-
-    enterName:
-      "Please enter your full name.",
-
-    enterGuestName:
-      "Please enter the guest's name.",
-
-    codeError:
-      "The code must contain exactly 4 digits.",
-
-    lockerNotFound:
-      "The locker does not exist.",
-
-    defect:
-      "This locker is marked as defective.",
-
-    occupied:
-      "This locker is already occupied.",
-
-    success:
-      "The locker has been registered.",
-
-    guestSuccess:
-      "The guest locker has been registered.",
-
-    registeredTo:
-      "is now registered to",
-
-    guestRegisteredTo:
-      "is now registered to guest",
-
-    today:
-      "The registration is only valid for today.",
-
-    error:
-      "An error occurred."
+    error: "An error occurred."
 
   }
 
@@ -494,40 +317,17 @@ function setLanguage(language) {
   document.getElementById("name").placeholder =
     t.namePlaceholder;
 
-  document.getElementById("guestNameLabel").textContent =
-    t.guestName;
-
-  document.getElementById("guestName").placeholder =
-    t.guestNamePlaceholder;
-
-  document.getElementById("guestCompanyLabel").textContent =
-    t.guestCompany;
-
-  document.getElementById("guestCompany").placeholder =
-    t.guestCompanyPlaceholder;
-
-  document.getElementById("guestEmailLabel").textContent =
-    t.guestEmail;
-
-  document.getElementById("guestEmail").placeholder =
-    t.guestEmailPlaceholder;
-
   document.getElementById("lockerCodeLabel").textContent =
     t.code;
 
   document.getElementById("registerButton").textContent =
     t.register;
 
-  document.getElementById("guestTitle").textContent =
-    t.guestTitle;
-
-  document.getElementById("guestInfoText").textContent =
-    t.guestInfo;
-
   document.getElementById("locker").textContent =
     lockerNumber
       ? t.locker + " " + lockerNumber
       : t.noLocker;
+
 }
 
 
@@ -541,23 +341,6 @@ function setupPage() {
     document.getElementById("registrationForm").classList.add("hidden");
 
     return;
-  }
-
-
-  if (isGuest) {
-
-    document
-      .getElementById("guestInfo")
-      .style.display = "block";
-
-    document
-      .getElementById("employeeFields")
-      .classList.add("hidden");
-
-    document
-      .getElementById("guestFields")
-      .classList.remove("hidden");
-
   }
 
 }
@@ -671,268 +454,6 @@ async function registerLocker() {
 
 
     /*
-     * GÆST
-     */
-
-    if (isGuest) {
-
-      const guestName =
-        document
-          .getElementById("guestName")
-          .value
-          .trim();
-
-      const guestCompany =
-        document
-          .getElementById("guestCompany")
-          .value
-          .trim();
-
-      const guestEmail =
-        document
-          .getElementById("guestEmail")
-          .value
-          .trim();
-
-
-      if (!guestName) {
-
-        throw new Error(
-          t.enterGuestName
-        );
-
-      }
-
-
-      const guestId =
-        "GUEST-" +
-        Date.now() +
-        "-" +
-        Math.floor(
-          Math.random() * 100000
-        );
-
-
-      let storedName =
-        guestName;
-
-
-      if (guestCompany) {
-
-        storedName +=
-          " (" +
-          guestCompany +
-          ")";
-
-      }
-
-
-      /*
-       * Opret gæst
-       */
-
-      const employeeResponse =
-        await fetch(
-          `${SUPABASE_URL}/rest/v1/employees`,
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json",
-
-              "apikey":
-                SUPABASE_KEY,
-
-              "Authorization":
-                `Bearer ${SUPABASE_KEY}`,
-
-              "Prefer":
-                "return=representation"
-            },
-
-            body: JSON.stringify({
-
-              employee_id:
-                guestId,
-
-              name:
-                storedName,
-
-              email:
-                guestEmail || guestId,
-
-              active:
-                true
-
-            })
-          }
-        );
-
-
-      if (!employeeResponse.ok) {
-
-        const errorText =
-          await employeeResponse.text();
-
-        throw new Error(
-          `Fejl ${employeeResponse.status}: ${errorText}`
-        );
-
-      }
-
-
-      const employeeData =
-        await employeeResponse.json();
-
-
-      const employeeId =
-        employeeData[0].id;
-
-
-      const now =
-        new Date().toISOString();
-
-
-      /*
-       * Optag gæsteskabet
-       */
-
-      const updateResponse =
-        await fetch(
-          `${SUPABASE_URL}/rest/v1/lockers?locker_number=eq.${encodeURIComponent(lockerNumber)}`,
-          {
-            method: "PATCH",
-
-            headers: {
-              "Content-Type":
-                "application/json",
-
-              "apikey":
-                SUPABASE_KEY,
-
-              "Authorization":
-                `Bearer ${SUPABASE_KEY}`,
-
-              "Prefer":
-                "return=minimal"
-            },
-
-            body: JSON.stringify({
-
-              status:
-                "occupied",
-
-              employee_id:
-                employeeId,
-
-              assigned_at:
-                now,
-
-              updated_at:
-                now
-
-            })
-          }
-        );
-
-
-      if (!updateResponse.ok) {
-
-        const errorText =
-          await updateResponse.text();
-
-        throw new Error(
-          `Fejl ${updateResponse.status}: ${errorText}`
-        );
-
-      }
-
-
-      /*
-       * Gem i historikken
-       */
-
-      const historyResponse =
-        await fetch(
-          `${SUPABASE_URL}/rest/v1/locker_history`,
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json",
-
-              "apikey":
-                SUPABASE_KEY,
-
-              "Authorization":
-                `Bearer ${SUPABASE_KEY}`,
-
-              "Prefer":
-                "return=minimal"
-            },
-
-            body: JSON.stringify({
-
-              locker_number:
-                lockerNumber,
-
-              floor:
-                Number(
-                  lockerNumber.split(".")[0]
-                ),
-
-              employee_id:
-                employeeId,
-
-              employee_name:
-                storedName,
-
-              assigned_at:
-                now
-
-            })
-          }
-        );
-
-
-      if (!historyResponse.ok) {
-
-        const errorText =
-          await historyResponse.text();
-
-        throw new Error(
-          `Fejl ${historyResponse.status}: ${errorText}`
-        );
-
-      }
-
-
-      document
-        .getElementById("registrationForm")
-        .classList.add("hidden");
-
-
-      status.className =
-        "success";
-
-
-      status.innerHTML =
-        `<strong>${t.guestSuccess}</strong>
-        <br><br>
-        ${t.locker} ${lockerNumber}
-        ${t.guestRegisteredTo}
-        ${guestName}.
-        <br><br>
-        ${t.today}`;
-
-
-      return;
-    }
-
-
-    /*
      * NORMAL MEDARBEJDER
      */
 
@@ -988,7 +509,7 @@ async function registerLocker() {
 
 
     /*
-     * Registrer medarbejderen
+     * REGISTRER MEDARBEJDEREN
      */
 
     const response =
@@ -1089,4 +610,3 @@ setLanguage(
 
 </body>
 </html>
-```
