@@ -408,10 +408,6 @@ async function loadAdmin() {
 
     allHistory = await historyResponse.json();
 
-    /*
-      locker_code og imported_name hentes kun i den beskyttede adminvisning.
-      Adgang til kolonnerne styres stadig af Supabase RLS og rettigheder.
-    */
     const lockersResponse = await fetch(
       `${SUPABASE_URL}/rest/v1/lockers?select=id,locker_number,floor,status,employee_id,assigned_at,defect,locker_code,imported_name&order=locker_number`,
       {
@@ -645,6 +641,10 @@ function renderLockers() {
         : null;
 
       const guest = isGuestLocker(locker) || isGuestEmployee(employee);
+      const hasImportedName = !!(
+        locker.imported_name &&
+        locker.imported_name.trim()
+      );
 
       const lockerHistory = allHistory.filter(item =>
         item.locker_number === locker.locker_number
@@ -664,11 +664,17 @@ function renderLockers() {
       let html = `
         <strong>Skab ${escapeHtml(locker.locker_number)}</strong>
         <br>
-        ${locker.imported_name
-          ? `<strong>Navn fra oversigten:</strong> ${escapeHtml(locker.imported_name)}<br>`
-          : ""}
-        <br>
       `;
+
+      if (hasImportedName) {
+        html += `
+          <strong>Navn fra oversigten:</strong>
+          ${escapeHtml(locker.imported_name)}
+          <br>
+        `;
+      }
+
+      html += "<br>";
 
       if (locker.defect === true) {
         html += `
@@ -678,6 +684,23 @@ function renderLockers() {
           <button class="repair-button"
             onclick="setLockerDefect('${escapeHtml(locker.id)}','${escapeHtml(locker.locker_number)}',false)">
             🟢 Markér som repareret
+          </button>
+        `;
+      } else if (hasImportedName) {
+        if (guest) {
+          html += `<div class="guest-label">👤 GÆSTESKAB</div><br>`;
+        }
+
+        html += `
+          <strong>Status:</strong> Optaget<br>
+          <button class="release-button"
+            onclick="releaseLocker('${escapeHtml(locker.id)}','${escapeHtml(locker.locker_number)}','${escapeHtml(locker.employee_id || "")}')">
+            Frigiv skab
+          </button>
+          <br>
+          <button class="defect-button"
+            onclick="setLockerDefect('${escapeHtml(locker.id)}','${escapeHtml(locker.locker_number)}',true)">
+            🟡 Markér som defekt
           </button>
         `;
       } else if (locker.status === "occupied") {
@@ -793,26 +816,33 @@ async function releaseLocker(lockerId, lockerNumber, employeeId) {
   if (!confirm(`Vil du frigive skab ${lockerNumber}?`)) return;
 
   try {
-    const historyResponse = await fetch(
-      `${SUPABASE_URL}/rest/v1/locker_history?locker_number=eq.${encodeURIComponent(lockerNumber)}&employee_id=eq.${encodeURIComponent(employeeId)}&released_at=is.null&order=assigned_at.desc&limit=1`,
-      {
-        method: "PATCH",
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-          "Prefer": "return=minimal"
-        },
-        body: JSON.stringify({
-          released_at: new Date().toISOString(),
-          released_by: currentUser.id
-        })
-      }
-    );
+    /*
+      Importerede skabe har ikke nødvendigvis et employee_id
+      eller en historikpost. Historikken opdateres kun,
+      hvis skabet har et medarbejder-ID.
+    */
+    if (employeeId) {
+      const historyResponse = await fetch(
+        `${SUPABASE_URL}/rest/v1/locker_history?locker_number=eq.${encodeURIComponent(lockerNumber)}&employee_id=eq.${encodeURIComponent(employeeId)}&released_at=is.null&order=assigned_at.desc&limit=1`,
+        {
+          method: "PATCH",
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal"
+          },
+          body: JSON.stringify({
+            released_at: new Date().toISOString(),
+            released_by: currentUser.id
+          })
+        }
+      );
 
-    if (!historyResponse.ok) {
-      const errorText = await historyResponse.text();
-      throw new Error("Kunne ikke opdatere historikken: " + errorText);
+      if (!historyResponse.ok) {
+        const errorText = await historyResponse.text();
+        throw new Error("Kunne ikke opdatere historikken: " + errorText);
+      }
     }
 
     const lockerResponse = await fetch(
