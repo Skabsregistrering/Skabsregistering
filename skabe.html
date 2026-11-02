@@ -1,9 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="da">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Vælg et skab</title>
 
   <style>
@@ -18,7 +18,7 @@
     .language {
       text-align: right;
       max-width: 1000px;
-      margin: 0 auto 10px;
+      margin: 0 auto 10px auto;
     }
 
     .language button {
@@ -38,10 +38,10 @@
     .floor {
       background: white;
       max-width: 1000px;
-      margin: 0 auto 30px;
+      margin: 0 auto 30px auto;
       padding: 20px;
       border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
     .floor h2 {
@@ -73,13 +73,9 @@
       cursor: pointer;
     }
 
-    .available:hover {
-      background: #16a34a;
-    }
-
     .occupied {
       background: #ef4444;
-      cursor: not-allowed;
+      cursor: pointer;
     }
 
     .defect {
@@ -88,7 +84,7 @@
     }
 
     .legend {
-      margin: 20px auto 30px;
+      margin: 20px auto 30px auto;
       font-size: 16px;
     }
 
@@ -99,25 +95,42 @@
     }
 
     .status {
-      margin: 25px auto;
-      font-size: 16px;
-      max-width: 1000px;
+      margin-top: 25px;
+      font-size: 18px;
     }
 
-    .request-section {
+    .modal {
       display: none;
-      max-width: 600px;
-      margin: 30px auto;
-      padding: 25px;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.55);
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .modal-box {
+      max-width: 500px;
+      margin: 60px auto;
       background: white;
+      padding: 25px;
       border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.1);
       text-align: left;
     }
 
-    .request-section h2 {
+    .modal-box h2 {
       margin-top: 0;
       text-align: center;
+    }
+
+    .selected-locker {
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+      margin: 20px 0;
     }
 
     label {
@@ -127,7 +140,8 @@
       font-weight: bold;
     }
 
-    input, textarea, select {
+    input,
+    textarea {
       width: 100%;
       box-sizing: border-box;
       padding: 12px;
@@ -135,11 +149,10 @@
       border: 1px solid #ccc;
       border-radius: 6px;
       font-family: Arial, sans-serif;
-      background: white;
     }
 
     textarea {
-      min-height: 100px;
+      min-height: 110px;
       resize: vertical;
     }
 
@@ -159,37 +172,18 @@
       background: #f59e0b;
     }
 
-    .hint {
-      color: #555;
-      font-size: 14px;
-      line-height: 1.45;
+    .reset-button {
+      background: #2563eb;
     }
 
-    .request-status {
+    .cancel-button {
+      background: #777;
+    }
+
+    .modal-status {
       text-align: center;
       margin-top: 15px;
       font-weight: bold;
-      overflow-wrap: anywhere;
-    }
-
-    @media (max-width: 600px) {
-      body {
-        padding: 12px;
-      }
-
-      h1 {
-        font-size: 27px;
-      }
-
-      .floor {
-        padding: 14px;
-      }
-
-      .locker {
-        width: 66px;
-        height: 50px;
-        font-size: 14px;
-      }
     }
   </style>
 </head>
@@ -209,78 +203,81 @@
     <span id="defectText">🟡 Defekt</span>
   </div>
 
-  <div id="lockers">Indlæser skabe...</div>
+  <div id="lockers">
+    Indlæser skabe...
+  </div>
 
   <div class="status" id="status"></div>
 
-  <section class="request-section" id="requestSection">
+  <div class="modal" id="modal">
 
-    <h2 id="requestTitle">Fejlmelding eller anmodning</h2>
+    <div class="modal-box">
 
-    <p class="hint" id="requestHint">
-      Indsend en fejlmelding eller anmodning.
-      Admin kontrollerer oplysningerne, før der foretages ændringer.
-    </p>
+      <h2 id="modalTitle">Skab</h2>
 
-    <label for="requestLocker" id="lockerLabel">
-      Skabsnummer
-    </label>
+      <div class="selected-locker" id="selectedLocker"></div>
 
-    <input
-      id="requestLocker"
-      type="text"
-      inputmode="decimal"
-      placeholder="Fx 2.208"
-      maxlength="10"
-    >
+      <label for="employeeEmail" id="emailLabel">
+        Norlys-e-mail
+      </label>
 
-    <label for="employeeName" id="nameLabel">
-      Fulde navn
-    </label>
+      <input
+        type="email"
+        id="employeeEmail"
+        placeholder="navn@norlys.dk"
+      >
 
-    <input
-      type="text"
-      id="employeeName"
-      placeholder="Fornavn Efternavn"
-      maxlength="150"
-      autocomplete="name"
-    >
+      <label for="employeeName" id="nameLabel">
+        Fulde navn
+      </label>
 
-    <label for="requestType" id="requestTypeLabel">
-      Hvad ønsker du?
-    </label>
+      <input
+        type="text"
+        id="employeeName"
+        placeholder="Fornavn Efternavn"
+      >
 
-    <select id="requestType">
-      <option value="fault" id="faultOption">
-        Fejlmeld skab
-      </option>
+      <label for="problemMessage" id="problemLabel">
+        Hvad er problemet?
+      </label>
 
-      <option value="reset" id="resetOption">
-        Anmod om nulstilling
-      </option>
-    </select>
+      <textarea
+        id="problemMessage"
+        placeholder="Beskriv problemet..."
+      ></textarea>
 
-    <label for="problemMessage" id="problemLabel">
-      Beskrivelse (kun ved fejlmelding)
-    </label>
+      <button
+        class="action-button fault-button"
+        onclick="sendRequest('Fejlmelding')"
+        id="faultButton"
+      >
+        🔧 Fejlmeld skab
+      </button>
 
-    <textarea
-      id="problemMessage"
-      placeholder="Beskriv problemet..."
-      maxlength="2000"
-    ></textarea>
+      <button
+        class="action-button reset-button"
+        onclick="sendRequest('Nulstilling ønsket')"
+        id="resetButton"
+      >
+        🔄 Nulstil mit skab
+      </button>
 
-    <button
-      class="action-button fault-button"
-      onclick="sendRequest()"
-      id="sendButton"
-    >
-      Send anmodning
-    </button>
+      <button
+        class="action-button cancel-button"
+        onclick="closeModal()"
+        id="cancelButton"
+      >
+        Annuller
+      </button>
 
-    <div class="request-status" id="requestStatus"></div>
+      <div
+        class="modal-status"
+        id="modalStatus"
+      ></div>
 
-  </section>
+    </div>
+
+  </div>
 
 <script>
 
@@ -290,9 +287,10 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
   "sb_publishable_XU7y4WVGX4Osj7ixgRIfDA_mHpJ1ttv";
 
+let selectedLocker = "";
+
 let currentLanguage =
   localStorage.getItem("lockerLanguage") || "da";
-
 
 const translations = {
 
@@ -301,41 +299,20 @@ const translations = {
     available: "🟢 Ledigt",
     occupied: "🔴 Optaget",
     defect: "🟡 Defekt",
-
     ground: "Stuen",
     floor1: "Etage 1",
     floor2: "Etage 2",
     floor3: "Etage 3",
-
     loading: "Indlæser skabe...",
     status: "Grøn = ledigt · Rød = optaget · Gul = defekt",
-
-    requestTitle: "Fejlmelding eller anmodning",
-
-    requestHint:
-      "Indsend en fejlmelding eller anmodning. Admin kontrollerer oplysningerne, før der foretages ændringer.",
-
-    locker: "Skabsnummer",
+    locker: "Skab",
+    email: "Norlys-e-mail",
     name: "Fulde navn",
-    requestType: "Hvad ønsker du?",
-
-    faultOption: "Fejlmeld skab",
-    resetOption: "Anmod om nulstilling",
-
-    problem: "Beskrivelse (kun ved fejlmelding)",
-
-    send: "Send anmodning",
-
-    lockerError: "Indtast skabsnummeret.",
-    nameError: "Indtast dit fulde navn.",
-    messageError: "Beskriv venligst problemet.",
-
-    sending: "Sender anmodning...",
-
-    sent:
-      "✅ Anmodningen er sendt til admin og afventer kontrol.",
-
-    error: "Der opstod en fejl."
+    problem: "Hvad er problemet?",
+    fault: "🔧 Fejlmeld skab",
+    reset: "🔄 Nulstil mit skab",
+    cancel: "Annuller",
+    error: "Der opstod en fejl.",
   },
 
   en: {
@@ -343,86 +320,79 @@ const translations = {
     available: "🟢 Available",
     occupied: "🔴 Occupied",
     defect: "🟡 Defective",
-
     ground: "Ground floor",
     floor1: "1st floor",
     floor2: "2nd floor",
     floor3: "3rd floor",
-
     loading: "Loading lockers...",
     status: "Green = available · Red = occupied · Yellow = defective",
-
-    requestTitle: "Problem report or request",
-
-    requestHint:
-      "Submit a problem report or request. Admin will verify the information before making changes.",
-
-    locker: "Locker number",
+    locker: "Locker",
+    email: "Norlys email",
     name: "Full name",
-    requestType: "What do you need?",
-
-    faultOption: "Report a problem",
-    resetOption: "Request a reset",
-
-    problem: "Description (for problem reports only)",
-
-    send: "Send request",
-
-    lockerError: "Enter the locker number.",
-    nameError: "Enter your full name.",
-    messageError: "Please describe the problem.",
-
-    sending: "Sending request...",
-
-    sent:
-      "✅ Request sent to admin and awaiting review.",
-
-    error: "An error occurred."
+    problem: "What is the problem?",
+    fault: "🔧 Report problem",
+    reset: "🔄 Reset my locker",
+    cancel: "Cancel",
+    error: "An error occurred.",
   }
 
 };
 
 
-/* SPROG */
-
 function setLanguage(language) {
 
   currentLanguage = language;
 
-  localStorage.setItem("lockerLanguage", language);
+  localStorage.setItem(
+    "lockerLanguage",
+    language
+  );
 
-  const t = translations[language];
+  const t =
+    translations[language];
 
-  document.documentElement.lang = language;
+  document.documentElement.lang =
+    language;
 
-  document.getElementById("pageTitle").textContent = t.title;
+  document.getElementById("pageTitle").textContent =
+    t.title;
 
-  document.getElementById("availableText").textContent = t.available;
-  document.getElementById("occupiedText").textContent = t.occupied;
-  document.getElementById("defectText").textContent = t.defect;
+  document.getElementById("availableText").textContent =
+    t.available;
 
-  document.getElementById("requestTitle").textContent = t.requestTitle;
-  document.getElementById("requestHint").textContent = t.requestHint;
+  document.getElementById("occupiedText").textContent =
+    t.occupied;
 
-  document.getElementById("lockerLabel").textContent = t.locker;
-  document.getElementById("nameLabel").textContent = t.name;
+  document.getElementById("defectText").textContent =
+    t.defect;
 
-  document.getElementById("requestTypeLabel").textContent = t.requestType;
+  document.getElementById("status").textContent =
+    t.status;
 
-  document.getElementById("faultOption").textContent = t.faultOption;
-  document.getElementById("resetOption").textContent = t.resetOption;
+  document.getElementById("modalTitle").textContent =
+    t.locker;
 
-  document.getElementById("problemLabel").textContent = t.problem;
+  document.getElementById("emailLabel").textContent =
+    t.email;
 
-  document.getElementById("sendButton").textContent = t.send;
+  document.getElementById("nameLabel").textContent =
+    t.name;
 
-  document.getElementById("status").textContent = t.status;
+  document.getElementById("problemLabel").textContent =
+    t.problem;
+
+  document.getElementById("faultButton").textContent =
+    t.fault;
+
+  document.getElementById("resetButton").textContent =
+    t.reset;
+
+  document.getElementById("cancelButton").textContent =
+    t.cancel;
 
   loadLockers();
 }
 
-
-/* HENT SKABE */
 
 async function loadLockers() {
 
@@ -432,14 +402,16 @@ async function loadLockers() {
   const status =
     document.getElementById("status");
 
-  const t = translations[currentLanguage];
+  const t =
+    translations[currentLanguage];
 
-  container.textContent = t.loading;
+  container.innerHTML =
+    t.loading;
 
   try {
 
     const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/lockers?select=locker_number,floor,status,defect`,
+      `${SUPABASE_URL}/rest/v1/lockers?select=locker_number,floor,status,defect,assigned_at`,
       {
         headers: {
           "apikey": SUPABASE_KEY,
@@ -450,21 +422,23 @@ async function loadLockers() {
 
     if (!response.ok) {
 
-      const errorText = await response.text();
+      const errorText =
+        await response.text();
 
       container.innerHTML = "";
 
-      status.textContent =
-        `Fejl ${response.status}: ${errorText}`;
+      status.innerHTML =
+        `<strong>Fejl ${response.status}</strong><br><br>${errorText}`;
 
       return;
     }
 
-    const data = await response.json();
+    let data =
+      await response.json();
 
     data.sort((a, b) =>
-      String(a.locker_number).localeCompare(
-        String(b.locker_number),
+      a.locker_number.localeCompare(
+        b.locker_number,
         undefined,
         { numeric: true }
       )
@@ -481,262 +455,288 @@ async function loadLockers() {
 
     for (let floor = 0; floor <= 3; floor++) {
 
-      const floorLockers = data.filter(
-        locker => Number(locker.floor) === floor
-      );
+      const floorLockers =
+        data.filter(
+          locker => Number(locker.floor) === floor
+        );
 
-      if (!floorLockers.length) continue;
+      if (floorLockers.length === 0) {
+        continue;
+      }
 
-      const floorDiv = document.createElement("div");
+      const floorDiv =
+        document.createElement("div");
 
-      floorDiv.className = "floor";
+      floorDiv.className =
+        "floor";
 
-      const title = document.createElement("h2");
+      const title =
+        document.createElement("h2");
 
       title.textContent =
-        floors[floor] || `Etage ${floor}`;
+        floors[floor];
 
       floorDiv.appendChild(title);
 
-      const lockersDiv = document.createElement("div");
+      const lockersDiv =
+        document.createElement("div");
 
-      lockersDiv.className = "lockers";
+      lockersDiv.className =
+        "lockers";
 
       floorLockers.forEach(locker => {
 
-        const lockerDiv = document.createElement("div");
+        const lockerDiv =
+          document.createElement("div");
 
         let lockerClass = "occupied";
 
         if (locker.defect === true) {
-
           lockerClass = "defect";
-
         } else if (locker.status === "available") {
-
           lockerClass = "available";
-
-        } else if (locker.status === "occupied") {
-
-          lockerClass = "occupied";
-
         }
 
         lockerDiv.className =
-          `locker ${lockerClass}`;
+          "locker " + lockerClass;
 
         lockerDiv.textContent =
           locker.locker_number;
 
-        // Kun ledige skabe kan vælges til registrering.
-        // Optagede og defekte skabe kan ikke ændres her.
-
+        /*
+         * LEDIGT SKAB
+         */
         if (
           locker.status === "available" &&
           locker.defect !== true
         ) {
 
-          lockerDiv.onclick = () => {
+          lockerDiv.onclick =
+            function() {
 
-            window.location.href =
-              `registrer.html?locker=${encodeURIComponent(
-                locker.locker_number
-              )}`;
+              window.location.href =
+                `registrer.html?locker=${encodeURIComponent(
+                  locker.locker_number
+                )}`;
 
-          };
-
-          lockerDiv.title =
-            currentLanguage === "da"
-              ? "Vælg dette ledige skab"
-              : "Choose this available locker";
-
-        } else {
-
-          lockerDiv.setAttribute(
-            "aria-disabled",
-            "true"
-          );
+            };
 
         }
 
-        lockersDiv.appendChild(lockerDiv);
+        /*
+         * OPTAGET SKAB
+         * Alle skabe behandles ens – også 0.007, 0.008 og 0.009.
+         */
+        if (
+          locker.status === "occupied" &&
+          locker.defect !== true
+        ) {
+          lockerDiv.onclick = function() {
+            openRequestModal(locker.locker_number);
+          };
+        }
+
+        lockersDiv.appendChild(
+          lockerDiv
+        );
 
       });
 
-      floorDiv.appendChild(lockersDiv);
+      floorDiv.appendChild(
+        lockersDiv
+      );
 
-      container.appendChild(floorDiv);
-
+      container.appendChild(
+        floorDiv
+      );
     }
 
-    document.getElementById("requestSection").style.display =
-      "block";
-
-    status.textContent = t.status;
+    status.textContent =
+      t.status;
 
   } catch (error) {
 
     container.innerHTML = "";
 
-    status.textContent =
-      `${t.error} ${error.message}`;
+    status.innerHTML =
+      `<strong>${t.error}</strong><br><br>` +
+      error.message;
 
   }
 
 }
 
 
-/* SEND ANMODNING TIL ADMIN */
+function openRequestModal(lockerNumber) {
 
-async function sendRequest() {
+  selectedLocker =
+    lockerNumber;
 
-  const lockerNumber =
-    document.getElementById("requestLocker").value.trim();
+  document
+    .getElementById("selectedLocker")
+    .textContent =
+      translations[currentLanguage].locker +
+      " " +
+      lockerNumber;
+
+  document
+    .getElementById("employeeEmail")
+    .value = "";
+
+  document
+    .getElementById("employeeName")
+    .value = "";
+
+  document
+    .getElementById("problemMessage")
+    .value = "";
+
+  document
+    .getElementById("modalStatus")
+    .textContent = "";
+
+  document
+    .getElementById("modal")
+    .style.display =
+      "block";
+}
+
+
+function closeModal() {
+
+  document
+    .getElementById("modal")
+    .style.display =
+      "none";
+}
+
+
+async function sendRequest(requestType) {
+
+  const email =
+    document
+      .getElementById("employeeEmail")
+      .value
+      .trim();
 
   const name =
-    document.getElementById("employeeName").value.trim();
-
-  const requestType =
-    document.getElementById("requestType").value;
+    document
+      .getElementById("employeeName")
+      .value
+      .trim();
 
   const message =
-    document.getElementById("problemMessage").value.trim();
+    document
+      .getElementById("problemMessage")
+      .value
+      .trim();
 
   const status =
-    document.getElementById("requestStatus");
+    document
+      .getElementById("modalStatus");
 
-  const sendButton =
-    document.getElementById("sendButton");
+  if (
+    !email ||
+    !email.toLowerCase().endsWith("@norlys.dk")
+  ) {
 
-  const t = translations[currentLanguage];
+    status.textContent =
+      currentLanguage === "da"
+        ? "Brug din Norlys-e-mail."
+        : "Use your Norlys email.";
 
-
-  if (!lockerNumber) {
-
-    status.textContent = t.lockerError;
     return;
-
   }
 
   if (!name) {
 
-    status.textContent = t.nameError;
-    return;
+    status.textContent =
+      currentLanguage === "da"
+        ? "Indtast dit fulde navn."
+        : "Enter your full name.";
 
+    return;
   }
 
-  if (requestType === "fault" && !message) {
+  if (
+    requestType === "Fejlmelding" &&
+    !message
+  ) {
 
-    status.textContent = t.messageError;
+    status.textContent =
+      currentLanguage === "da"
+        ? "Beskriv venligst problemet."
+        : "Please describe the problem.";
+
     return;
-
   }
 
-
-  status.textContent = t.sending;
-
-  sendButton.disabled = true;
-
+  status.textContent =
+    currentLanguage === "da"
+      ? "Kontrollerer skabet..."
+      : "Checking locker...";
 
   try {
 
-    const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/rpc/submit_locker_request`,
-      {
-        method: "POST",
+    const response =
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/rpc/submit_locker_request`,
+        {
+          method: "POST",
 
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`
-        },
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`
+          },
 
-        body: JSON.stringify({
+          body: JSON.stringify({
 
-          p_locker_number: lockerNumber,
+            p_locker_number:
+              selectedLocker,
 
-          p_employee_email: null,
+            p_employee_email:
+              email,
 
-          p_employee_name: name,
+            p_employee_name:
+              name,
 
-          p_request_type: requestType,
+            p_request_type:
+              requestType,
 
-          p_message: message || null
-
-        })
-      }
-    );
-
+            p_message:
+              message || null
+          })
+        }
+      );
 
     if (!response.ok) {
 
-      const errorText = await response.text();
+      const errorText =
+        await response.text();
 
       throw new Error(
         `Fejl ${response.status}: ${errorText}`
       );
-
     }
 
+    status.innerHTML =
+      currentLanguage === "da"
+        ? "✅ Anmodningen er sendt."
+        : "✅ Request sent.";
 
-    const result = await response.json();
-
-    if (!result || result.success !== true) {
-
-      throw new Error(
-        result?.message || t.error
-      );
-
-    }
-
-
-    status.textContent = t.sent;
-
-    document.getElementById("requestLocker").value = "";
-
-    document.getElementById("employeeName").value = "";
-
-    document.getElementById("problemMessage").value = "";
-
+    setTimeout(
+      closeModal,
+      1500
+    );
 
   } catch (error) {
 
     status.textContent =
-      error.message || t.error;
-
-  } finally {
-
-    sendButton.disabled = false;
-
+      error.message;
   }
-
 }
 
-
-/* BESKRIVELSE KUN VED FEJLMELDING */
-
-document
-  .getElementById("requestType")
-  .addEventListener("change", () => {
-
-    const isFault =
-      document.getElementById("requestType").value === "fault";
-
-    const messageField =
-      document.getElementById("problemMessage");
-
-    messageField.disabled = !isFault;
-
-    if (!isFault) {
-
-      messageField.value = "";
-
-    }
-
-  });
-
-
-/* START */
 
 setLanguage(currentLanguage);
 
