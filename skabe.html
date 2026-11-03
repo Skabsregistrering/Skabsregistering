@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Vælg et skab</title>
 
   <style>
@@ -238,12 +237,12 @@
       >
 
       <label for="problemMessage" id="problemLabel">
-        Hvad er problemet?
+        Beskriv din fejl eller anmodning
       </label>
 
       <textarea
         id="problemMessage"
-        placeholder="Beskriv problemet..."
+        placeholder="Beskriv problemet eller skriv hvilken skabskode du ønsker..."
       ></textarea>
 
       <button
@@ -259,7 +258,7 @@
         onclick="sendRequest('Anmodning')"
         id="requestButton"
       >
-        📝 Anmodning
+        📝 Anmodning om ny skabskode
       </button>
 
       <button
@@ -310,9 +309,9 @@ const translations = {
     name: "Fulde navn",
     problem: "Beskriv din fejl eller anmodning",
     fault: "🔧 Fejlmeld skab",
-    request: "📝 Anmodning",
+    request: "📝 Anmodning om ny skabskode",
     cancel: "Annuller",
-    error: "Der opstod en fejl.",
+    error: "Der opstod en fejl."
   },
 
   en: {
@@ -331,9 +330,9 @@ const translations = {
     name: "Full name",
     problem: "Describe your problem or request",
     fault: "🔧 Report a problem",
-    request: "📝 Request",
+    request: "📝 Request a new locker code",
     cancel: "Cancel",
-    error: "An error occurred.",
+    error: "An error occurred."
   }
 
 };
@@ -503,9 +502,7 @@ async function loadLockers() {
         lockerDiv.textContent =
           locker.locker_number;
 
-        /*
-         * LEDIGT SKAB
-         */
+        // LEDIGT SKAB
         if (
           locker.status === "available" &&
           locker.defect !== true
@@ -523,10 +520,7 @@ async function loadLockers() {
 
         }
 
-        /*
-         * OPTAGET SKAB
-         * Alle skabe behandles ens – også 0.007, 0.008 og 0.009.
-         */
+        // OPTAGET SKAB
         if (
           locker.status === "occupied" &&
           locker.defect !== true
