@@ -172,12 +172,8 @@
       background: #f59e0b;
     }
 
-    .reset-button {
+    .request-button {
       background: #2563eb;
-    }
-
-    .code-button {
-      background: #0f766e;
     }
 
     .cancel-button {
@@ -259,19 +255,11 @@
       </button>
 
       <button
-        class="action-button reset-button"
-        onclick="sendRequest('Nulstilling ønsket')"
-        id="resetButton"
+        class="action-button request-button"
+        onclick="sendRequest('Anmodning')"
+        id="requestButton"
       >
-        🔄 Nulstil mit skab
-      </button>
-
-      <button
-        class="action-button code-button"
-        onclick="sendRequest('Ændring af skabskode')"
-        id="codeButton"
-      >
-        🔐 Anmod om ændring af skabskode
+        📝 Anmodning
       </button>
 
       <button
@@ -320,12 +308,11 @@ const translations = {
     locker: "Skab",
     email: "Norlys-e-mail",
     name: "Fulde navn",
-    problem: "Hvad er problemet?",
+    problem: "Beskriv din fejl eller anmodning",
     fault: "🔧 Fejlmeld skab",
-    reset: "🔄 Nulstil mit skab",
-    codeChange: "🔐 Anmod om ændring af skabskode",
+    request: "📝 Anmodning",
     cancel: "Annuller",
-    error: "Der opstod en fejl."
+    error: "Der opstod en fejl.",
   },
 
   en: {
@@ -342,12 +329,11 @@ const translations = {
     locker: "Locker",
     email: "Norlys email",
     name: "Full name",
-    problem: "What is the problem?",
-    fault: "🔧 Report problem",
-    reset: "🔄 Reset my locker",
-    codeChange: "🔐 Request locker code change",
+    problem: "Describe your problem or request",
+    fault: "🔧 Report a problem",
+    request: "📝 Request",
     cancel: "Cancel",
-    error: "An error occurred."
+    error: "An error occurred.",
   }
 
 };
@@ -398,11 +384,8 @@ function setLanguage(language) {
   document.getElementById("faultButton").textContent =
     t.fault;
 
-  document.getElementById("resetButton").textContent =
-    t.reset;
-
-  document.getElementById("codeButton").textContent =
-    t.codeChange;
+  document.getElementById("requestButton").textContent =
+    t.request;
 
   document.getElementById("cancelButton").textContent =
     t.cancel;
@@ -520,6 +503,9 @@ async function loadLockers() {
         lockerDiv.textContent =
           locker.locker_number;
 
+        /*
+         * LEDIGT SKAB
+         */
         if (
           locker.status === "available" &&
           locker.defect !== true
@@ -537,20 +523,17 @@ async function loadLockers() {
 
         }
 
+        /*
+         * OPTAGET SKAB
+         * Alle skabe behandles ens – også 0.007, 0.008 og 0.009.
+         */
         if (
           locker.status === "occupied" &&
           locker.defect !== true
         ) {
-
-          lockerDiv.onclick =
-            function() {
-
-              openRequestModal(
-                locker.locker_number
-              );
-
-            };
-
+          lockerDiv.onclick = function() {
+            openRequestModal(locker.locker_number);
+          };
         }
 
         lockersDiv.appendChild(
@@ -642,18 +625,11 @@ async function sendRequest(requestType) {
       .value
       .trim();
 
-  let message =
+  const message =
     document
       .getElementById("problemMessage")
       .value
       .trim();
-
-  if (requestType === "Ændring af skabskode") {
-
-    message =
-      "Medarbejderen anmoder om ændring af sin 4-cifrede skabskode. Skabet skal forblive optaget. Vagten skal kontakte medarbejderen og aftale ændringen.";
-
-  }
 
   const status =
     document
@@ -682,15 +658,12 @@ async function sendRequest(requestType) {
     return;
   }
 
-  if (
-    requestType === "Fejlmelding" &&
-    !message
-  ) {
+  if (!message) {
 
     status.textContent =
       currentLanguage === "da"
-        ? "Beskriv venligst problemet."
-        : "Please describe the problem.";
+        ? "Skriv venligst, hvad din fejlmelding eller anmodning drejer sig om."
+        : "Please describe your problem or request.";
 
     return;
   }
@@ -729,8 +702,7 @@ async function sendRequest(requestType) {
               requestType,
 
             p_message:
-              message || null
-
+              message
           })
         }
       );
@@ -743,12 +715,11 @@ async function sendRequest(requestType) {
       throw new Error(
         `Fejl ${response.status}: ${errorText}`
       );
-
     }
 
     status.innerHTML =
       currentLanguage === "da"
-        ? "✅ Anmodningen er sendt til vagten. Du får besked, når den er behandlet."
+        ? "✅ Din anmodning er sendt til vagten. Du får besked, når den er behandlet."
         : "✅ Your request has been sent to the guard. You will be notified when it has been handled.";
 
     setTimeout(
@@ -760,9 +731,7 @@ async function sendRequest(requestType) {
 
     status.textContent =
       error.message;
-
   }
-
 }
 
 
