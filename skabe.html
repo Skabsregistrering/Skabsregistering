@@ -32,7 +32,7 @@
 
     h1 {
       font-size: 32px;
-      margin-bottom: 20px;
+      margin-bottom: 30px;
     }
 
     .floor {
@@ -66,8 +66,6 @@
       font-weight: bold;
       color: white;
       font-size: 15px;
-      cursor: not-allowed;
-      user-select: none;
     }
 
     .available {
@@ -75,13 +73,9 @@
       cursor: pointer;
     }
 
-    .available:hover {
-      background: #16a34a;
-    }
-
     .occupied {
       background: #ef4444;
-      cursor: not-allowed;
+      cursor: pointer;
     }
 
     .defect {
@@ -90,7 +84,7 @@
     }
 
     .legend {
-      margin: 20px auto;
+      margin: 20px auto 30px auto;
       font-size: 16px;
     }
 
@@ -98,36 +92,6 @@
       display: inline-block;
       margin: 5px 10px;
       font-weight: bold;
-    }
-
-    .request-section {
-      max-width: 600px;
-      margin: 25px auto 30px auto;
-      padding: 20px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-
-    .request-section h2 {
-      margin-top: 0;
-    }
-
-    .request-open-button {
-      width: 100%;
-      max-width: 400px;
-      padding: 14px 18px;
-      border: none;
-      border-radius: 8px;
-      background: #2563eb;
-      color: white;
-      font-size: 17px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .request-open-button:hover {
-      background: #1d4ed8;
     }
 
     .status {
@@ -146,12 +110,11 @@
       background: rgba(0,0,0,0.55);
       padding: 20px;
       box-sizing: border-box;
-      overflow-y: auto;
     }
 
     .modal-box {
       max-width: 500px;
-      margin: 40px auto;
+      margin: 60px auto;
       background: white;
       padding: 25px;
       border-radius: 12px;
@@ -163,6 +126,13 @@
       text-align: center;
     }
 
+    .selected-locker {
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+      margin: 20px 0;
+    }
+
     label {
       display: block;
       margin-top: 15px;
@@ -171,8 +141,7 @@
     }
 
     input,
-    textarea,
-    select {
+    textarea {
       width: 100%;
       box-sizing: border-box;
       padding: 12px;
@@ -180,7 +149,6 @@
       border: 1px solid #ccc;
       border-radius: 6px;
       font-family: Arial, sans-serif;
-      background: white;
     }
 
     textarea {
@@ -208,6 +176,10 @@
       background: #2563eb;
     }
 
+    .code-button {
+      background: #0f766e;
+    }
+
     .cancel-button {
       background: #777;
     }
@@ -216,37 +188,6 @@
       text-align: center;
       margin-top: 15px;
       font-weight: bold;
-      line-height: 1.5;
-    }
-
-    .action-button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    @media (max-width: 500px) {
-      body {
-        padding: 10px;
-      }
-
-      h1 {
-        font-size: 26px;
-      }
-
-      .floor {
-        padding: 12px;
-      }
-
-      .locker {
-        width: 65px;
-        height: 48px;
-        font-size: 13px;
-      }
-
-      .modal-box {
-        margin: 15px auto;
-        padding: 18px;
-      }
     }
   </style>
 </head>
@@ -266,53 +207,28 @@
     <span id="defectText">🟡 Defekt</span>
   </div>
 
-  <div class="request-section">
-
-    <h2 id="requestSectionTitle">
-      Har du brug for hjælp til et skab?
-    </h2>
-
-    <button
-      class="request-open-button"
-      onclick="openRequestModal()"
-      id="requestOpenButton"
-    >
-      🔧 Fejlmeld eller anmod om nulstilling
-    </button>
-
-  </div>
-
   <div id="lockers">
     Indlæser skabe...
   </div>
 
   <div class="status" id="status"></div>
 
-  <!-- ANMODNINGSMODAL -->
-
   <div class="modal" id="modal">
 
     <div class="modal-box">
 
-      <h2 id="modalTitle">Anmodning om hjælp</h2>
+      <h2 id="modalTitle">Skab</h2>
 
-      <label for="requestLockerNumber" id="lockerLabel">
-        Vælg skab
-      </label>
-
-      <select id="requestLockerNumber">
-        <option value="">Vælg skabsnummer</option>
-      </select>
+      <div class="selected-locker" id="selectedLocker"></div>
 
       <label for="employeeEmail" id="emailLabel">
-        E-mail
+        Norlys-e-mail
       </label>
 
       <input
         type="email"
         id="employeeEmail"
         placeholder="navn@norlys.dk"
-        autocomplete="email"
       >
 
       <label for="employeeName" id="nameLabel">
@@ -323,11 +239,10 @@
         type="text"
         id="employeeName"
         placeholder="Fornavn Efternavn"
-        autocomplete="name"
       >
 
       <label for="problemMessage" id="problemLabel">
-        Beskrivelse
+        Hvad er problemet?
       </label>
 
       <textarea
@@ -337,7 +252,7 @@
 
       <button
         class="action-button fault-button"
-        onclick="sendRequest('fault')"
+        onclick="sendRequest('Fejlmelding')"
         id="faultButton"
       >
         🔧 Fejlmeld skab
@@ -345,10 +260,18 @@
 
       <button
         class="action-button reset-button"
-        onclick="sendRequest('reset')"
+        onclick="sendRequest('Nulstilling ønsket')"
         id="resetButton"
       >
-        🔄 Anmod om nulstilling
+        🔄 Nulstil mit skab
+      </button>
+
+      <button
+        class="action-button code-button"
+        onclick="sendRequest('Ændring af skabskode')"
+        id="codeButton"
+      >
+        🔐 Anmod om ændring af skabskode
       </button>
 
       <button
@@ -362,7 +285,6 @@
       <div
         class="modal-status"
         id="modalStatus"
-        aria-live="polite"
       ></div>
 
     </div>
@@ -377,13 +299,10 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
   "sb_publishable_XU7y4WVGX4Osj7ixgRIfDA_mHpJ1ttv";
 
+let selectedLocker = "";
+
 let currentLanguage =
   localStorage.getItem("lockerLanguage") || "da";
-
-let allLockers = [];
-
-let requestSending = false;
-
 
 const translations = {
 
@@ -392,76 +311,21 @@ const translations = {
     available: "🟢 Ledigt",
     occupied: "🔴 Optaget",
     defect: "🟡 Defekt",
-
     ground: "Stuen",
     floor1: "Etage 1",
     floor2: "Etage 2",
     floor3: "Etage 3",
-
     loading: "Indlæser skabe...",
-
-    status:
-      "Grøn = ledigt · Rød = optaget · Gul = defekt",
-
-    requestTitle:
-      "Har du brug for hjælp til et skab?",
-
-    requestButton:
-      "🔧 Fejlmeld eller anmod om nulstilling",
-
-    modalTitle:
-      "Anmodning om hjælp til et skab",
-
-    lockerLabel:
-      "Vælg skab",
-
-    lockerPlaceholder:
-      "Vælg skabsnummer",
-
-    email:
-      "E-mail",
-
-    name:
-      "Fulde navn",
-
-    problem:
-      "Beskrivelse (obligatorisk ved fejlmelding)",
-
-    problemPlaceholder:
-      "Beskriv problemet...",
-
-    fault:
-      "🔧 Fejlmeld skab",
-
-    reset:
-      "🔄 Anmod om nulstilling",
-
-    cancel:
-      "Annuller",
-
-    selectLocker:
-      "Vælg venligst et skab.",
-
-    invalidEmail:
-      "Indtast en gyldig e-mailadresse.",
-
-    enterName:
-      "Indtast dit fulde navn.",
-
-    describeProblem:
-      "Beskriv venligst problemet.",
-
-    sending:
-      "Sender anmodning...",
-
-    success:
-      "✅ Din anmodning er sendt. Admin kigger på sagen.",
-
-    error:
-      "Der opstod en fejl.",
-
-    loadError:
-      "Kunne ikke hente skabene."
+    status: "Grøn = ledigt · Rød = optaget · Gul = defekt",
+    locker: "Skab",
+    email: "Norlys-e-mail",
+    name: "Fulde navn",
+    problem: "Hvad er problemet?",
+    fault: "🔧 Fejlmeld skab",
+    reset: "🔄 Nulstil mit skab",
+    codeChange: "🔐 Anmod om ændring af skabskode",
+    cancel: "Annuller",
+    error: "Der opstod en fejl."
   },
 
   en: {
@@ -469,76 +333,21 @@ const translations = {
     available: "🟢 Available",
     occupied: "🔴 Occupied",
     defect: "🟡 Defective",
-
     ground: "Ground floor",
     floor1: "1st floor",
     floor2: "2nd floor",
     floor3: "3rd floor",
-
     loading: "Loading lockers...",
-
-    status:
-      "Green = available · Red = occupied · Yellow = defective",
-
-    requestTitle:
-      "Do you need help with a locker?",
-
-    requestButton:
-      "🔧 Report a fault or request a reset",
-
-    modalTitle:
-      "Request help with a locker",
-
-    lockerLabel:
-      "Choose locker",
-
-    lockerPlaceholder:
-      "Choose locker number",
-
-    email:
-      "Email",
-
-    name:
-      "Full name",
-
-    problem:
-      "Description (required for fault reports)",
-
-    problemPlaceholder:
-      "Describe the problem...",
-
-    fault:
-      "🔧 Report a fault",
-
-    reset:
-      "🔄 Request a reset",
-
-    cancel:
-      "Cancel",
-
-    selectLocker:
-      "Please choose a locker.",
-
-    invalidEmail:
-      "Enter a valid email address.",
-
-    enterName:
-      "Enter your full name.",
-
-    describeProblem:
-      "Please describe the problem.",
-
-    sending:
-      "Sending request...",
-
-    success:
-      "✅ Your request has been sent. Admin will review it.",
-
-    error:
-      "An error occurred.",
-
-    loadError:
-      "Could not load lockers."
+    status: "Green = available · Red = occupied · Yellow = defective",
+    locker: "Locker",
+    email: "Norlys email",
+    name: "Full name",
+    problem: "What is the problem?",
+    fault: "🔧 Report problem",
+    reset: "🔄 Reset my locker",
+    codeChange: "🔐 Request locker code change",
+    cancel: "Cancel",
+    error: "An error occurred."
   }
 
 };
@@ -574,17 +383,8 @@ function setLanguage(language) {
   document.getElementById("status").textContent =
     t.status;
 
-  document.getElementById("requestSectionTitle").textContent =
-    t.requestTitle;
-
-  document.getElementById("requestOpenButton").textContent =
-    t.requestButton;
-
   document.getElementById("modalTitle").textContent =
-    t.modalTitle;
-
-  document.getElementById("lockerLabel").textContent =
-    t.lockerLabel;
+    t.locker;
 
   document.getElementById("emailLabel").textContent =
     t.email;
@@ -595,70 +395,19 @@ function setLanguage(language) {
   document.getElementById("problemLabel").textContent =
     t.problem;
 
-  document.getElementById("problemMessage").placeholder =
-    t.problemPlaceholder;
-
   document.getElementById("faultButton").textContent =
     t.fault;
 
   document.getElementById("resetButton").textContent =
     t.reset;
 
+  document.getElementById("codeButton").textContent =
+    t.codeChange;
+
   document.getElementById("cancelButton").textContent =
     t.cancel;
 
-  updateLockerOptions();
-
   loadLockers();
-}
-
-
-function updateLockerOptions() {
-
-  const select =
-    document.getElementById("requestLockerNumber");
-
-  const t =
-    translations[currentLanguage];
-
-  const previousValue =
-    select.value;
-
-  select.innerHTML = "";
-
-  const placeholder =
-    document.createElement("option");
-
-  placeholder.value = "";
-  placeholder.textContent =
-    t.lockerPlaceholder;
-
-  select.appendChild(placeholder);
-
-  allLockers.forEach(locker => {
-
-    const option =
-      document.createElement("option");
-
-    option.value =
-      locker.locker_number;
-
-    option.textContent =
-      locker.locker_number;
-
-    select.appendChild(option);
-
-  });
-
-  if (
-    previousValue &&
-    allLockers.some(
-      locker => locker.locker_number === previousValue
-    )
-  ) {
-    select.value = previousValue;
-  }
-
 }
 
 
@@ -673,7 +422,7 @@ async function loadLockers() {
   const t =
     translations[currentLanguage];
 
-  container.textContent =
+  container.innerHTML =
     t.loading;
 
   try {
@@ -695,24 +444,22 @@ async function loadLockers() {
 
       container.innerHTML = "";
 
-      status.textContent =
-        `${t.loadError} ${response.status}: ${errorText}`;
+      status.innerHTML =
+        `<strong>Fejl ${response.status}</strong><br><br>${errorText}`;
 
       return;
     }
 
-    allLockers =
+    let data =
       await response.json();
 
-    allLockers.sort((a, b) =>
+    data.sort((a, b) =>
       a.locker_number.localeCompare(
         b.locker_number,
         undefined,
         { numeric: true }
       )
     );
-
-    updateLockerOptions();
 
     container.innerHTML = "";
 
@@ -726,7 +473,7 @@ async function loadLockers() {
     for (let floor = 0; floor <= 3; floor++) {
 
       const floorLockers =
-        allLockers.filter(
+        data.filter(
           locker => Number(locker.floor) === floor
         );
 
@@ -773,39 +520,52 @@ async function loadLockers() {
         lockerDiv.textContent =
           locker.locker_number;
 
-        /*
-         * KUN LEDIGE SKABE KAN KLIKKES.
-         */
-
         if (
           locker.status === "available" &&
           locker.defect !== true
         ) {
 
-          lockerDiv.onclick = function() {
+          lockerDiv.onclick =
+            function() {
 
-            window.location.href =
-              `registrer.html?locker=${encodeURIComponent(
-                locker.locker_number
-              )}`;
+              window.location.href =
+                `registrer.html?locker=${encodeURIComponent(
+                  locker.locker_number
+                )}`;
 
-          };
+            };
 
         }
 
-        /*
-         * OPTAGEDE OG DEFEKTE SKABE
-         * HAR INGEN KLIK-FUNKTION.
-         */
+        if (
+          locker.status === "occupied" &&
+          locker.defect !== true
+        ) {
 
-        lockersDiv.appendChild(lockerDiv);
+          lockerDiv.onclick =
+            function() {
+
+              openRequestModal(
+                locker.locker_number
+              );
+
+            };
+
+        }
+
+        lockersDiv.appendChild(
+          lockerDiv
+        );
 
       });
 
-      floorDiv.appendChild(lockersDiv);
+      floorDiv.appendChild(
+        lockersDiv
+      );
 
-      container.appendChild(floorDiv);
-
+      container.appendChild(
+        floorDiv
+      );
     }
 
     status.textContent =
@@ -815,150 +575,165 @@ async function loadLockers() {
 
     container.innerHTML = "";
 
-    status.textContent =
-      `${t.error} ${error.message}`;
+    status.innerHTML =
+      `<strong>${t.error}</strong><br><br>` +
+      error.message;
 
   }
 
 }
 
 
-function openRequestModal() {
+function openRequestModal(lockerNumber) {
 
-  const modal =
-    document.getElementById("modal");
+  selectedLocker =
+    lockerNumber;
 
-  document.getElementById("requestLockerNumber").value =
-    "";
+  document
+    .getElementById("selectedLocker")
+    .textContent =
+      translations[currentLanguage].locker +
+      " " +
+      lockerNumber;
 
-  document.getElementById("employeeEmail").value =
-    "";
+  document
+    .getElementById("employeeEmail")
+    .value = "";
 
-  document.getElementById("employeeName").value =
-    "";
+  document
+    .getElementById("employeeName")
+    .value = "";
 
-  document.getElementById("problemMessage").value =
-    "";
+  document
+    .getElementById("problemMessage")
+    .value = "";
 
-  document.getElementById("modalStatus").textContent =
-    "";
+  document
+    .getElementById("modalStatus")
+    .textContent = "";
 
-  requestSending = false;
-
-  document.getElementById("faultButton").disabled =
-    false;
-
-  document.getElementById("resetButton").disabled =
-    false;
-
-  modal.style.display =
-    "block";
-
+  document
+    .getElementById("modal")
+    .style.display =
+      "block";
 }
 
 
 function closeModal() {
 
-  document.getElementById("modal").style.display =
-    "none";
-
+  document
+    .getElementById("modal")
+    .style.display =
+      "none";
 }
 
 
 async function sendRequest(requestType) {
 
-  if (requestSending) {
-    return;
-  }
-
-  const lockerNumber =
-    document.getElementById("requestLockerNumber").value;
-
   const email =
-    document.getElementById("employeeEmail").value.trim();
+    document
+      .getElementById("employeeEmail")
+      .value
+      .trim();
 
   const name =
-    document.getElementById("employeeName").value.trim();
+    document
+      .getElementById("employeeName")
+      .value
+      .trim();
 
-  const message =
-    document.getElementById("problemMessage").value.trim();
+  let message =
+    document
+      .getElementById("problemMessage")
+      .value
+      .trim();
+
+  if (requestType === "Ændring af skabskode") {
+
+    message =
+      "Medarbejderen anmoder om ændring af sin 4-cifrede skabskode. Skabet skal forblive optaget. Vagten skal kontakte medarbejderen og aftale ændringen.";
+
+  }
 
   const status =
-    document.getElementById("modalStatus");
-
-  const t =
-    translations[currentLanguage];
-
-  if (!lockerNumber) {
-    status.textContent = t.selectLocker;
-    return;
-  }
+    document
+      .getElementById("modalStatus");
 
   if (
     !email ||
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    !email.toLowerCase().endsWith("@norlys.dk")
   ) {
-    status.textContent = t.invalidEmail;
+
+    status.textContent =
+      currentLanguage === "da"
+        ? "Brug din Norlys-e-mail."
+        : "Use your Norlys email.";
+
     return;
   }
 
   if (!name) {
-    status.textContent = t.enterName;
+
+    status.textContent =
+      currentLanguage === "da"
+        ? "Indtast dit fulde navn."
+        : "Enter your full name.";
+
     return;
   }
 
   if (
-    requestType === "fault" &&
+    requestType === "Fejlmelding" &&
     !message
   ) {
-    status.textContent = t.describeProblem;
+
+    status.textContent =
+      currentLanguage === "da"
+        ? "Beskriv venligst problemet."
+        : "Please describe the problem.";
+
     return;
   }
 
-  requestSending = true;
-
-  document.getElementById("faultButton").disabled =
-    true;
-
-  document.getElementById("resetButton").disabled =
-    true;
-
   status.textContent =
-    t.sending;
+    currentLanguage === "da"
+      ? "Kontrollerer skabet..."
+      : "Checking locker...";
 
   try {
 
-    const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/rpc/submit_locker_request`,
-      {
-        method: "POST",
+    const response =
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/rpc/submit_locker_request`,
+        {
+          method: "POST",
 
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`
-        },
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`
+          },
 
-        body: JSON.stringify({
+          body: JSON.stringify({
 
-          p_locker_number:
-            lockerNumber,
+            p_locker_number:
+              selectedLocker,
 
-          p_employee_email:
-            email,
+            p_employee_email:
+              email,
 
-          p_employee_name:
-            name,
+            p_employee_name:
+              name,
 
-          p_request_type:
-            requestType,
+            p_request_type:
+              requestType,
 
-          p_message:
-            message || null
+            p_message:
+              message || null
 
-        })
-      }
-    );
+          })
+        }
+      );
 
     if (!response.ok) {
 
@@ -971,50 +746,24 @@ async function sendRequest(requestType) {
 
     }
 
-    status.textContent =
-      t.success;
-
-    document.getElementById("faultButton").disabled =
-      true;
-
-    document.getElementById("resetButton").disabled =
-      true;
+    status.innerHTML =
+      currentLanguage === "da"
+        ? "✅ Anmodningen er sendt til vagten. Du får besked, når den er behandlet."
+        : "✅ Your request has been sent to the guard. You will be notified when it has been handled.";
 
     setTimeout(
       closeModal,
-      3000
+      1500
     );
 
   } catch (error) {
 
     status.textContent =
-      `${t.error} ${error.message}`;
-
-    requestSending = false;
-
-    document.getElementById("faultButton").disabled =
-      false;
-
-    document.getElementById("resetButton").disabled =
-      false;
+      error.message;
 
   }
 
 }
-
-
-// Luk modal ved klik udenfor boksen.
-
-document.getElementById("modal").addEventListener(
-  "click",
-  function(event) {
-
-    if (event.target === this) {
-      closeModal();
-    }
-
-  }
-);
 
 
 setLanguage(currentLanguage);
