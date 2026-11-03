@@ -102,25 +102,9 @@
     .available { border-left: 6px solid #22c55e; }
     .occupied { border-left: 6px solid #ef4444; }
 
-    .guest {
-      border-left: 6px solid #2563eb;
-      background: #eff6ff;
-    }
-
     .defective {
       border-left: 6px solid #eab308;
       background: #fffbea;
-    }
-
-    .guest-label {
-      display: inline-block;
-      background: #2563eb;
-      color: white;
-      padding: 4px 8px;
-      border-radius: 5px;
-      font-size: 12px;
-      font-weight: bold;
-      margin-bottom: 8px;
     }
 
     .locker-code {
@@ -278,8 +262,6 @@
 const SUPABASE_URL = "https://pwgwujojffxinfbqjlyb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_XU7y4WVGX4Osj7ixgRIfDA_mHpJ1ttv";
 
-const GUEST_LOCKERS = ["0.007", "0.008", "0.009"];
-
 let accessToken = "";
 let currentUser = null;
 let employeeMap = {};
@@ -300,18 +282,6 @@ function escapeHtml(value) {
 function formatDate(date) {
   if (!date) return "-";
   return new Date(date).toLocaleString("da-DK");
-}
-
-function isGuestLocker(locker) {
-  return GUEST_LOCKERS.includes(String(locker.locker_number));
-}
-
-function isGuestEmployee(employee) {
-  return !!(
-    employee &&
-    typeof employee.employee_id === "string" &&
-    employee.employee_id.startsWith("GUEST-")
-  );
 }
 
 /* LOGIN */
@@ -382,7 +352,8 @@ async function loadAdmin() {
     );
 
     if (!employeesResponse.ok) {
-      throw new Error("Kunne ikke hente medarbejdere.");
+      const errorText = await employeesResponse.text();
+      throw new Error("Kunne ikke hente medarbejdere: " + errorText);
     }
 
     const employees = await employeesResponse.json();
@@ -640,11 +611,15 @@ function renderLockers() {
         ? employeeMap[locker.employee_id]
         : null;
 
-      const guest = isGuestLocker(locker) || isGuestEmployee(employee);
       const hasImportedName = !!(
         locker.imported_name &&
         locker.imported_name.trim()
       );
+
+      // Brug medarbejdernavnet først.
+      // Hvis det ikke findes, bruges det importerede navn.
+      const employeeName = employee?.name || locker.imported_name || "Ukendt";
+      const employeeEmail = employee?.email || "Ukendt";
 
       const lockerHistory = allHistory.filter(item =>
         item.locker_number === locker.locker_number
@@ -654,8 +629,6 @@ function renderLockers() {
 
       if (locker.defect === true) {
         lockerDiv.className = "locker defective";
-      } else if (guest && locker.status === "occupied") {
-        lockerDiv.className = "locker guest";
       } else {
         lockerDiv.className =
           "locker " + (locker.status === "occupied" ? "occupied" : "available");
@@ -666,33 +639,17 @@ function renderLockers() {
         <br>
       `;
 
-      if (hasImportedName) {
-        html += `
-          <strong>Navn fra oversigten:</strong>
-          ${escapeHtml(locker.imported_name)}
-          <br>
-        `;
-      }
-
-      html += "<br>";
-
-      if (locker.defect === true) {
-        html += `
-          <strong>Status:</strong>
-          <span class="defect-status">🟡 DEFEKT</span>
-          <br>
-          <button class="repair-button"
-            onclick="setLockerDefect('${escapeHtml(locker.id)}','${escapeHtml(locker.locker_number)}',false)">
-            🟢 Markér som repareret
-          </button>
-        `;
-      } else if (hasImportedName) {
-        if (guest) {
-          html += `<div class="guest-label">👤 GÆSTESKAB</div><br>`;
-        }
-
+      if (locker.status === "occupied") {
         html += `
           <strong>Status:</strong> Optaget<br>
+          <strong>Navn:</strong> ${escapeHtml(employeeName)}<br>
+          <strong>E-mail:</strong> ${escapeHtml(employeeEmail)}<br>
+          <strong>Registreret:</strong> ${formatDate(locker.assigned_at)}<br>
+          <strong>Medarbejderkode:</strong><br>
+          <span class="locker-code">
+            ${locker.locker_code ? escapeHtml(locker.locker_code) : "Ikke gemt"}
+          </span>
+          <br>
           <button class="release-button"
             onclick="releaseLocker('${escapeHtml(locker.id)}','${escapeHtml(locker.locker_number)}','${escapeHtml(locker.employee_id || "")}')">
             Frigiv skab
@@ -703,39 +660,16 @@ function renderLockers() {
             🟡 Markér som defekt
           </button>
         `;
-      } else if (locker.status === "occupied") {
-        if (guest) {
-          html += `
-            <div class="guest-label">👤 GÆSTESKAB</div><br>
-            <strong>Status:</strong> Optaget<br>
-            <strong>Gæst:</strong> ${escapeHtml(employee?.name || "Ukendt")}<br>
-            <strong>E-mail:</strong> ${escapeHtml(employee?.email || "Ikke oplyst")}<br>
-            <strong>Registreret:</strong> ${formatDate(locker.assigned_at)}<br>
-            <button class="release-button"
-              onclick="releaseLocker('${escapeHtml(locker.id)}','${escapeHtml(locker.locker_number)}','${escapeHtml(locker.employee_id)}')">
-              Frigiv skab
-            </button>
-          `;
-        } else {
-          html += `
-            <strong>Status:</strong> Optaget<br>
-            <strong>Navn:</strong> ${escapeHtml(employee?.name || "Ukendt")}<br>
-            <strong>E-mail:</strong> ${escapeHtml(employee?.email || "Ukendt")}<br>
-            <strong>Registreret:</strong> ${formatDate(locker.assigned_at)}<br>
-            <strong>Medarbejderkode:</strong><br>
-            <span class="locker-code">${locker.locker_code ? escapeHtml(locker.locker_code) : "Ikke gemt"}</span>
-            <br>
-            <button class="release-button"
-              onclick="releaseLocker('${escapeHtml(locker.id)}','${escapeHtml(locker.locker_number)}','${escapeHtml(locker.employee_id)}')">
-              Frigiv skab
-            </button>
-            <br>
-            <button class="defect-button"
-              onclick="setLockerDefect('${escapeHtml(locker.id)}','${escapeHtml(locker.locker_number)}',true)">
-              🟡 Markér som defekt
-            </button>
-          `;
-        }
+      } else if (locker.defect === true) {
+        html += `
+          <strong>Status:</strong>
+          <span class="defect-status">🟡 DEFEKT</span>
+          <br>
+          <button class="repair-button"
+            onclick="setLockerDefect('${escapeHtml(locker.id)}','${escapeHtml(locker.locker_number)}',false)">
+            🟢 Markér som repareret
+          </button>
+        `;
       } else {
         html += `
           <strong>Status:</strong> Ledigt<br>
@@ -817,8 +751,7 @@ async function releaseLocker(lockerId, lockerNumber, employeeId) {
 
   try {
     /*
-      Importerede skabe har ikke nødvendigvis et employee_id
-      eller en historikpost. Historikken opdateres kun,
+      Historikken opdateres kun,
       hvis skabet har et medarbejder-ID.
     */
     if (employeeId) {
