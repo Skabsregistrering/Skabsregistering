@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="da">
 <head>
@@ -537,7 +536,7 @@ async function loadAdmin() {
 async function loadTasks() {
   try {
     const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/locker_requests?select=id,locker_number,employee_name,employee_email,request_type,message,status,created_at,completed_at,completed_by&order=created_at.desc`,
+      `${SUPABASE_URL}/rest/v1/locker_requests?select=id,locker_number,employee_name,employee_email,request_type,message,requested_code,status,created_at,completed_at,completed_by&order=created_at.desc`,
       { headers: apiHeaders() }
     );
 
@@ -571,6 +570,7 @@ function renderTasks() {
       task.employee_email,
       task.request_type,
       task.message,
+      task.requested_code,
       task.status
     ].map(normalizeSearch).join(" ");
 
@@ -606,12 +606,6 @@ function createTaskElement(task, completed) {
   const div = document.createElement("div");
   div.className = completed ? "task completed-task" : "task";
 
-  const locker = allLockers.find(
-    item => String(item.locker_number) === String(task.locker_number)
-  );
-
-  const desiredCode = locker?.locker_code || "Ikke registreret";
-
   const emailHtml = task.employee_email
     ? `<a class="email-link" href="mailto:${encodeURIComponent(task.employee_email)}">${escapeHtml(task.employee_email)}</a>`
     : "Ukendt";
@@ -625,11 +619,13 @@ function createTaskElement(task, completed) {
     <strong>Norlys-mail:</strong>
     ${emailHtml}<br>
 
-    <strong>Ønsket 4-cifret skabskode:</strong>
-    ${escapeHtml(desiredCode)}<br>
-
     <strong>Type:</strong>
     ${escapeHtml(task.request_type || "-")}<br>
+
+    ${task.request_type === "Anmodning" ? `
+      <strong>Medarbejderens ønskede nye skabskode:</strong>
+      ${escapeHtml(task.requested_code || "Ikke oplyst")}<br>
+    ` : ""}
 
     <strong>Beskrivelse:</strong>
     ${escapeHtml(task.message || "Ingen beskrivelse")}<br>
@@ -1090,7 +1086,7 @@ async function createFullBackup() {
       "assigned_at.desc"),
 
     fetchBackupTable("locker_requests",
-      "id,locker_number,employee_name,employee_email,request_type,message,status,created_at,completed_at,completed_by",
+      "id,locker_number,employee_name,employee_email,request_type,message,requested_code,status,created_at,completed_at,completed_by",
       "created_at.desc")
   ]);
 
@@ -1253,6 +1249,7 @@ async function downloadPDFBackup() {
       {key:"employee_name",label:"Navn"},
       {key:"request_type",label:"Type"},
       {key:"message",label:"Beskrivelse"},
+      {key:"requested_code",label:"Ønsket ny kode"},
       {key:"status",label:"Status"},
       {key:"created_at",label:"Oprettet",date:true},
       {key:"completed_at",label:"Afsluttet",date:true}
