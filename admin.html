@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="da">
 <head>
@@ -148,9 +149,7 @@ input { width: 100%; }
   opacity: .8;
 }
 
-.task-status {
-  margin: 15px 0;
-}
+.task-status { margin: 15px 0; }
 
 .task-status-open {
   color: #dc2626;
@@ -1033,7 +1032,7 @@ async function releaseLocker(lockerId, lockerNumber, employeeId) {
   }
 }
 
-/* BACKUP */
+/* BACKUP – MED EJEROPLYSNINGER */
 
 async function fetchBackupTable(table, select, order) {
   let allRows = [];
@@ -1073,34 +1072,66 @@ async function createFullBackup() {
   }
 
   const [lockers, employees, history, tasks] = await Promise.all([
-    fetchBackupTable("lockers",
+    fetchBackupTable(
+      "lockers",
       "id,locker_number,floor,status,employee_id,assigned_at,defect,imported_name,locker_code",
-      "locker_number.asc"),
+      "locker_number.asc"
+    ),
 
-    fetchBackupTable("employees",
+    fetchBackupTable(
+      "employees",
       "id,employee_id,name,email",
-      "name.asc"),
+      "name.asc"
+    ),
 
-    fetchBackupTable("locker_history",
+    fetchBackupTable(
+      "locker_history",
       "id,locker_number,floor,employee_id,employee_name,assigned_at,released_at,released_by",
-      "assigned_at.desc"),
+      "assigned_at.desc"
+    ),
 
-    fetchBackupTable("locker_requests",
+    fetchBackupTable(
+      "locker_requests",
       "id,locker_number,employee_name,employee_email,request_type,message,requested_code,status,created_at,completed_at,completed_by",
-      "created_at.desc")
+      "created_at.desc"
+    )
   ]);
 
+  // Slå medarbejderne op via deres interne ID.
+  const employeeLookup = {};
+
+  employees.forEach(employee => {
+    employeeLookup[String(employee.id)] = employee;
+  });
+
+  // Tilføj ejerens oplysninger direkte til hvert skab.
+  const lockersWithOwners = lockers.map(locker => {
+    const employee = locker.employee_id
+      ? employeeLookup[String(locker.employee_id)]
+      : null;
+
+    return {
+      ...locker,
+      owner_name: employee?.name || locker.imported_name || "",
+      owner_employee_number: employee?.employee_id || "",
+      owner_email: employee?.email || "",
+      owner_found: !!employee
+    };
+  });
+
   return {
-    backup_version: 1,
+    backup_version: 2,
     backup_created_at: new Date().toISOString(),
     backup_created_by: currentUser.id,
     source: "Skabsregistrering",
+
     data: {
-      lockers,
+      lockers: lockersWithOwners,
       employees,
       locker_history: history,
       locker_requests: tasks
     },
+
     counts: {
       lockers: lockers.length,
       employees: employees.length,
@@ -1132,13 +1163,16 @@ function setBackupStatus(message, isError = false) {
 
 async function downloadJSONBackup() {
   const button = document.getElementById("backupJsonButton");
+
   button.disabled = true;
   button.textContent = "Henter data...";
   setBackupStatus("Henter alle data fra Supabase...");
 
   try {
     const backup = await createFullBackup();
-    const filename = `skabsregistrering-backup-${new Date().toISOString().slice(0,10)}.json`;
+
+    const filename =
+      `skabsregistrering-backup-${new Date().toISOString().slice(0,10)}.json`;
 
     downloadBackupFile(
       JSON.stringify(backup, null, 2),
@@ -1147,7 +1181,10 @@ async function downloadJSONBackup() {
     );
 
     setBackupStatus(
-      `JSON-backup klar. ${backup.counts.lockers} skabe, ${backup.counts.employees} medarbejdere, ${backup.counts.history} historikposter og ${backup.counts.tasks} opgaver.`
+      `JSON-backup klar. ${backup.counts.lockers} skabe, ` +
+      `${backup.counts.employees} medarbejdere, ` +
+      `${backup.counts.history} historikposter og ` +
+      `${backup.counts.tasks} opgaver.`
     );
 
   } catch (error) {
@@ -1159,7 +1196,10 @@ async function downloadJSONBackup() {
 }
 
 function backupTable(title, rows, columns) {
-  let html = `<h2>${escapeHtml(title)}</h2><p>Antal poster: ${rows.length}</p><table><thead><tr>`;
+  let html =
+    `<h2>${escapeHtml(title)}</h2>` +
+    `<p>Antal poster: ${rows.length}</p>` +
+    `<table><thead><tr>`;
 
   columns.forEach(column => {
     html += `<th>${escapeHtml(column.label)}</th>`;
@@ -1176,9 +1216,17 @@ function backupTable(title, rows, columns) {
       columns.forEach(column => {
         let value = row[column.key];
 
-        if (value === null || value === undefined || value === "") value = "-";
-        if (column.date && value !== "-") value = formatDate(value);
-        if (typeof value === "boolean") value = value ? "Ja" : "Nej";
+        if (value === null || value === undefined || value === "") {
+          value = "-";
+        }
+
+        if (column.date && value !== "-") {
+          value = formatDate(value);
+        }
+
+        if (typeof value === "boolean") {
+          value = value ? "Ja" : "Nej";
+        }
 
         html += `<td>${escapeHtml(value)}</td>`;
       });
@@ -1207,23 +1255,31 @@ async function downloadPDFBackup() {
     const backup = await createFullBackup();
     const data = backup.data;
 
+    const ownersFound = data.lockers.filter(
+      locker => locker.owner_found
+    ).length;
+
     let report = `
       <h1>Skabsregistrering – Sikkerhedskopi</h1>
       <p><strong>Dato:</strong> ${formatDate(backup.backup_created_at)}</p>
+
       <h2>Oversigt</h2>
       <ul>
         <li>Skabe: ${backup.counts.lockers}</li>
         <li>Medarbejdere: ${backup.counts.employees}</li>
+        <li>Skabe med tilknyttet medarbejder: ${ownersFound}</li>
         <li>Historikposter: ${backup.counts.history}</li>
         <li>Opgaver: ${backup.counts.tasks}</li>
       </ul>
     `;
 
-    report += backupTable("Alle skabe", data.lockers, [
+    report += backupTable("Alle skabe – med ejeroplysninger", data.lockers, [
       {key:"locker_number",label:"Skab"},
       {key:"floor",label:"Etage"},
       {key:"status",label:"Status"},
-      {key:"employee_id",label:"Medarbejder-ID"},
+      {key:"owner_name",label:"Ejerens navn"},
+      {key:"owner_employee_number",label:"Medarbejdernummer"},
+      {key:"owner_email",label:"E-mail"},
       {key:"locker_code",label:"Skabskode"},
       {key:"assigned_at",label:"Registreret",date:true},
       {key:"defect",label:"Defekt"}
@@ -1241,41 +1297,89 @@ async function downloadPDFBackup() {
       {key:"employee_name",label:"Navn"},
       {key:"employee_id",label:"Medarbejder-ID"},
       {key:"assigned_at",label:"Registreret",date:true},
-      {key:"released_at",label:"Frigivet",date:true}
+      {key:"released_at",label:"Frigivet",date:true},
+      {key:"released_by",label:"Frigivet af"}
     ]);
 
     report += backupTable("Alle opgaver", data.locker_requests, [
       {key:"locker_number",label:"Skab"},
       {key:"employee_name",label:"Navn"},
+      {key:"employee_email",label:"E-mail"},
       {key:"request_type",label:"Type"},
       {key:"message",label:"Beskrivelse"},
       {key:"requested_code",label:"Ønsket ny kode"},
       {key:"status",label:"Status"},
       {key:"created_at",label:"Oprettet",date:true},
-      {key:"completed_at",label:"Afsluttet",date:true}
+      {key:"completed_at",label:"Afsluttet",date:true},
+      {key:"completed_by",label:"Afsluttet af"}
     ]);
 
     printWindow.document.open();
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html lang="da">
       <head>
         <meta charset="UTF-8">
         <title>Skabsregistrering – Backup</title>
+
         <style>
-          body {font-family:Arial,sans-serif;padding:25px;color:#222}
-          h1 {font-size:24px}
-          h2 {margin-top:35px;font-size:19px;border-bottom:2px solid #333;padding-bottom:6px}
-          table {width:100%;border-collapse:collapse;margin-bottom:25px;font-size:9px;table-layout:fixed;overflow-wrap:anywhere}
-          th {background:#eee;text-align:left}
-          th,td {border:1px solid #ccc;padding:5px}
-          tr {page-break-inside:avoid}
-          @media print {body{padding:0}}
+          @page {
+            size: A4 landscape;
+            margin: 12mm;
+          }
+
+          body {
+            font-family: Arial, sans-serif;
+            padding: 15px;
+            color: #222;
+          }
+
+          h1 { font-size: 24px; }
+
+          h2 {
+            margin-top: 35px;
+            font-size: 19px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 6px;
+          }
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+            font-size: 9px;
+            table-layout: fixed;
+            overflow-wrap: anywhere;
+          }
+
+          th {
+            background: #eee;
+            text-align: left;
+          }
+
+          th, td {
+            border: 1px solid #ccc;
+            padding: 5px;
+          }
+
+          tr { page-break-inside: avoid; }
+
+          @media print {
+            body { padding: 0; }
+          }
         </style>
       </head>
+
       <body>
         ${report}
-        <p><strong>Dette dokument er en sikkerhedskopi af data hentet fra Supabase.</strong></p>
+
+        <p>
+          <strong>
+            Dette dokument er en sikkerhedskopi af data hentet fra Supabase.
+          </strong>
+        </p>
+
         <script>
           window.onload = function() {
             window.focus();
@@ -1285,6 +1389,7 @@ async function downloadPDFBackup() {
       </body>
       </html>
     `);
+
     printWindow.document.close();
 
     setBackupStatus("PDF-rapporten er klar. Vælg 'Gem som PDF' i udskriftsvinduet.");
